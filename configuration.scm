@@ -3,8 +3,14 @@
 ;; setup, so it has barely any services at all.
 
 (use-modules (gnu))
+(use-modules (nongnu packages linux)
+	     (nongnu system linux-initrd))
+
 
 (operating-system
+  (kernel linux)
+  (initrd microcode-initrd)
+  (firmware (list linux-firmware))
   (host-name "komputilo")
   (timezone "Europe/Berlin")
   (locale "en_US.utf8")
