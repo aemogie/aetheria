@@ -1,1 +1,3 @@
-/run
+/run # for guix system container
+/build # for guix system build
+/result # idk, i might use it
