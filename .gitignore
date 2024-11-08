@@ -1,1 +1,2 @@
-/result # the makefile adds the built gcroots here
+# the makefile adds the built gcroots here
+/result
