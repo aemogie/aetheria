@@ -21,13 +21,43 @@
                 (supplementary-groups '("wheel" "audio" "video")))
                %base-user-accounts))
 
-  ;; This will be ignored.
-  (bootloader (bootloader-configuration
-               (bootloader grub-bootloader)
-               (targets '("does-not-matter"))))
-  ;; This will be ignored, too.
-  (file-systems (list (file-system
-                        (device "does-not-matter")
-                        (mount-point "/")
-                        (type "does-not-matter")))))
+  (bootloader
+   (bootloader-configuration
+    (bootloader grub-efi-bootloader)
+    (targets '("/boot"))))
 
+  (file-systems ;; WIP
+   (let ((boot-part (file-system-label "serena-boot"))
+	 (root-part (file-system-label "serena"))
+	 (pers-part (file-system-label "serena-persist")))
+     (list
+      (file-system
+	(device boot-part)
+	(mount-point "/boot")
+	(type "vfat"))
+      (file-system
+	(mount-point "/")
+	(needed-for-boot? #t)
+	(device root-part)
+	(type "btrfs")
+	(flags '(no-atime))
+	(options "subvol=@,ssd"))
+      (file-system
+	(mount-point "/gnu/store")
+	(needed-for-boot? #t)
+	(device root-part)
+	(type "btrfs")
+	(flags '(no-atime))
+	(options "subvol=@aetheria-store,discard=async,ssd"))
+      (file-system
+	(mount-point "/persist")
+	(needed-for-boot? #f)
+	(device pers-part)
+	(type "btrfs")
+	(flags '(no-atime)))
+      (file-system
+	(mount-point "/persist")
+	(needed-for-boot? #f)
+	(device pers-part)
+	(type "btrfs")
+	(flags '(no-atime)))))))
