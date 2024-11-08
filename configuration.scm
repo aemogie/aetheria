@@ -1,43 +1,25 @@
 ;; -*- mode: scheme; -*-
-;; This is an operating system configuration template for a "Docker image"
-;; setup, so it has barely any services at all.
 
-(use-modules (gnu))
-(use-modules (nongnu packages linux)
+
+(use-modules (gnu)
+	     (gnu bootloader)
+	     (gnu bootloader grub)
+	     (nongnu packages linux)
 	     (nongnu system linux-initrd))
-
 
 (operating-system
   (kernel linux)
   (initrd microcode-initrd)
   (firmware (list linux-firmware))
-  (host-name "komputilo")
-  (timezone "Europe/Berlin")
-  (locale "en_US.utf8")
+  (host-name "serena")
+  (timezone "Asia/Colombo")
+  (locale "en_GB.utf8")
 
-  ;; This is where user accounts are specified.  The "root" account is
-  ;; implicit, and is initially created with the empty password.
   (users (cons (user-account
-                (name "alice")
-                (comment "Bob's sister")
+                (name "aemogie")
                 (group "users")
-                (supplementary-groups '("wheel"
-                                        "audio" "video")))
+                (supplementary-groups '("wheel" "audio" "video")))
                %base-user-accounts))
-
-  ;; Globally-installed packages.
-  (packages %base-packages)
-
-  ;; Because the system will run in a Docker container, we may omit many
-  ;; things that would normally be required in an operating system
-  ;; configuration file.  These things include:
-  ;;
-  ;;   * bootloader
-  ;;   * file-systems
-  ;;   * services such as mingetty, udevd, slim, networking, dhcp
-  ;;
-  ;; Either these things are simply not required, or Docker provides
-  ;; similar services for us.
 
   ;; This will be ignored.
   (bootloader (bootloader-configuration
@@ -47,6 +29,5 @@
   (file-systems (list (file-system
                         (device "does-not-matter")
                         (mount-point "/")
-                        (type "does-not-matter"))))
+                        (type "does-not-matter")))))
 
-  (services %base-services))
