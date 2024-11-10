@@ -1,4 +1,5 @@
 GUIX := guix time-machine -C channels.lock.scm --
+VERBOSITY = 3
 
 .PHONY: geiser-repl update-lockfile build-container run-container
 
@@ -16,15 +17,21 @@ ifneq ("$(wildcard ./result/run-container)","")
 	rm ./result/run-container
 endif
 	mkdir -p result
-	$(GUIX) system container configuration.scm -r"result/run-container"
+	$(GUIX) system container -v $(VERBOSITY) configuration.scm -r"result/run-container"
 
 # yes, build-container produces this, but make doesnt know that. its just a PHONY target
 # the names are just a coincidence, plus im trying to learn make
-run-container:
+run-container: build-container
 	sudo ./result/run-container --share="$(shell pwd)=/config"
 
 build-system: configuration.scm channels.lock.scm
-	$(GUIX) system build configuration.scm -r"result/system"
+ifneq ("$(wildcard ./result/system)","")
+	rm ./result/system
+endif
+	$(GUIX) system build -v $(VERBOSITY) configuration.scm -r"result/system"
 
 build-vm:
-	$(GUIX) system vm --full-boot -r"result/run-vm" configuration.scm
+ifneq ("$(wildcard ./result/run-vm)","")
+	rm ./result/run-vm
+endif
+	$(GUIX) system vm -v $(VERBOSITY) --full-boot -r"result/run-vm" configuration.scm
