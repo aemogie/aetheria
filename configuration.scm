@@ -4,6 +4,7 @@
 (use-modules (gnu)
 	     (gnu bootloader)
 	     (gnu bootloader grub)
+	     (gnu services desktop)
 	     (nongnu packages linux)
 	     (nongnu system linux-initrd))
 
@@ -18,8 +19,13 @@
   (users (cons (user-account
                 (name "aemogie")
                 (group "users")
+		(password (crypt "password" "$6$aetheria"))
                 (supplementary-groups '("wheel" "audio" "video")))
-               %base-user-accounts))
+	       %base-user-accounts))
+
+  (packages (cons* ;; TODO: add wm?
+	     %base-packages))
+  (services %desktop-services)
 
   (bootloader
    (bootloader-configuration
@@ -30,7 +36,7 @@
    (let ((boot-part (file-system-label "serena-boot"))
 	 (root-part (file-system-label "serena"))
 	 (pers-part (file-system-label "serena-persist")))
-     (list
+     (cons*
       (file-system
 	(device boot-part)
 	(mount-point "/boot")
@@ -41,7 +47,7 @@
 	(device root-part)
 	(type "btrfs")
 	(flags '(no-atime))
-	(options "subvol=@,ssd"))
+	(options "subvol=@,discard=async,ssd"))
       (file-system
 	(mount-point "/gnu/store")
 	(needed-for-boot? #t)
@@ -50,14 +56,10 @@
 	(flags '(no-atime))
 	(options "subvol=@aetheria-store,discard=async,ssd"))
       (file-system
-	(mount-point "/persist")
-	(needed-for-boot? #f)
-	(device pers-part)
+	(mount-point "/var/guix")
+	(needed-for-boot? #t)
+	(device root-part)
 	(type "btrfs")
-	(flags '(no-atime)))
-      (file-system
-	(mount-point "/persist")
-	(needed-for-boot? #f)
-	(device pers-part)
-	(type "btrfs")
-	(flags '(no-atime)))))))
+	(flags '(no-atime))
+	(options "subvol=@aetheria-meta,discard=async,ssd"))
+      %base-file-systems))))
