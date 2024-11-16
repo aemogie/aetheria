@@ -1,37 +1,54 @@
-GUIX := guix time-machine -C channels.lock.scm --
-VERBOSITY = 3
+guix := guix time-machine -C channels.lock.scm --
 
-.PHONY: geiser-repl update-lockfile build-container run-container
+VERBOSITY ?= 3
 
-update-lockfile: tmplock := $(shell mktemp)
-update-lockfile:
-	guix time-machine -C channels.scm -- describe -f channels > "$(tmplock)" && \
-	  cat "$(tmplock)" > channels.lock.scm
-	rm -f "$(tmplock)"
+.PHONY: geiser-repl update-lockfile build-sytem run-container run-vm
 
 geiser-repl:
-	$(GUIX) repl --listen=tcp:37146
+	$(guix) repl --listen=tcp:37146
 
-build-container: configuration.scm channels.lock.scm
-ifneq ("$(wildcard ./result/run-container)","")
-	rm ./result/run-container
-endif
-	mkdir -p result
-	$(GUIX) system container -v $(VERBOSITY) configuration.scm -r"result/run-container"
+--build-dirs:
+	@mkdir -p build/tmp
 
-# yes, build-container produces this, but make doesnt know that. its just a PHONY target
-# the names are just a coincidence, plus im trying to learn make
-run-container: build-container
-	sudo ./result/run-container --share="$(shell pwd)=/config"
+build/tmp/channels.lock.scm: --build-dirs
+	guix time-machine -C channels.scm -- describe -f channels > build/tmp/channels.lock.scm || exit 1
+# doesnt depend on channels.scm as you might need to update lockfile without updating channels
+update-lockfile: build/tmp/channels.lock.scm
+	rm channels.lock.scm
+	mv build/tmp/channels.lock.scm channels.lock.scm
 
-build-system: configuration.scm channels.lock.scm
-ifneq ("$(wildcard ./result/system)","")
-	rm ./result/system
-endif
-	$(GUIX) system build -v $(VERBOSITY) configuration.scm -r"result/system"
 
-build-vm:
-ifneq ("$(wildcard ./result/run-vm)","")
-	rm ./result/run-vm
-endif
-	$(GUIX) system vm -v $(VERBOSITY) --full-boot -r"result/run-vm" configuration.scm
+build/system: configuration.scm channels.lock.scm --build-dirs
+	$(guix) system build -v $(VERBOSITY) configuration.scm -r"build/tmp/system" || exit 1
+	rm build/system
+	mv build/tmp/system build/system
+build-system: build/system
+
+
+build/run-container: configuration.scm channels.lock.scm --build-dirs
+	$(guix) system container -v $(VERBOSITY) configuration.scm -r"build/tmp/run-container" || exit 1
+	rm build/run-container
+	mv build/tmp/run-container build/run-container
+
+run-container: build/run-container
+	sudo build/run-container --share="$(shell pwd)=/config"
+
+build/run-vm: configuration.scm channels.lock.scm --build-dirs
+	$(guix) system vm -v $(VERBOSITY) --full-boot -r"build/tmp/run-vm" configuration.scm || exit 1
+	rm build/run-vm
+	mv build/tmp/run-vm build/run-vm
+
+run-vm: build/run-vm
+	build/run-vm
+
+build/fs: configuration.scm channels.lock.scm --build-dirs
+	mkdir -p build/fs
+# todo: load these definitions from configuration.scm through gnu make's guile support
+	sudo mount -L serena -o no-atime,discard=async,ssd,subvol=@ -m build/fs/
+	sudo mount -L serena -o no-atime,discard=async,ssd,subvol=@aetheria-store -m build/fs/gnu/store 
+	sudo mount -L serena -o no-atime,discard=async,ssd,subvol=@aetheria-meta -m build/fs/var/guix
+	sudo mount -L BOOTTMP -m build/fs/boot
+	sudo $(guix) system init -v $(VERBOSITY) configuration.scm build/fs
+
+clean:
+	rm -rf build
