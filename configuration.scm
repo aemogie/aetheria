@@ -7,7 +7,13 @@
 	     (nongnu packages linux)
 	     (nongnu system linux-initrd)
 	     (gnu services desktop)
-	     (gnu packages package-management))
+	     (gnu services xorg)
+	     (gnu packages package-management)
+             (gnu packages wm)
+             (gnu packages gnuzilla)
+	     (gnu packages emacs)
+             (gnu packages emacs-xyz)
+	     (gnu packages fonts))
 
 (operating-system
   (kernel linux)
@@ -24,12 +30,17 @@
                 (name "aemogie")
                 (group "users")
 		(password (crypt "password" "$6$aetheria"))
-                (supplementary-groups '("wheel" "audio" "video")))
+                (supplementary-groups '("wheel" "netdev" "audio" "video")))
 	       %base-user-accounts))
 
   (packages (cons* ;; TODO: add wm?
+             font-iosevka-comfy
+             cage icecat ;; good enough
+	     emacs-next-pgtk-xwidgets
+             gnu-make ;; for `make reconfigure`
 	     %base-packages))
   (services (modify-services %desktop-services
+	      (delete gdm-service-type)
 	      ;; dont think this is how it's supposed to be done, it recomputes the channel on each build
 	      ;; TODO: maybe look into inferiors? does that solve this?
 	      (guix-service-type
