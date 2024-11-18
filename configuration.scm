@@ -63,7 +63,9 @@
   (file-systems ;; WIP
    (let ((boot-part (file-system-label "serena-boot"))
 	 (root-part (file-system-label "serena"))
-	 (pers-part (file-system-label "serena-persist")))
+	 (pers-part (file-system-label "serena-persist"))
+	 (nivea-home-part (file-system-label "NIXHOME"))
+	 (nivea-part (file-system-label "NIXOS")))
      (cons*
       (file-system
 	(device boot-part)
@@ -90,4 +92,24 @@
 	(type "btrfs")
 	(flags '(no-atime))
 	(options "subvol=@aetheria-meta,discard=async,ssd"))
+      (file-system
+       	(mount-point "/persist")
+       	(device pers-part)
+       	(type "btrfs")
+       	(flags '(no-atime)))
+      (file-system
+       	(mount-point "/mnt/nivea")
+       	(device nivea-part)
+       	(type "ext4")
+	(flags '(read-only)))
+      (file-system
+        (mount-point "/mnt/nivea/home")
+        (device nivea-home-part)
+        (type "ext4")
+	(flags '(read-only)))
+      (file-system
+       (mount-point "/nix/store")
+       (device "/mnt/nivea/nix/store")
+       (type "none")
+       (flags '(bind-mount read-only)))
       %base-file-systems))))
