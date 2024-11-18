@@ -2,7 +2,7 @@ guix := guix time-machine -C channels.lock.scm --
 
 VERBOSITY ?= 3
 
-.PHONY: geiser-repl update-lockfile build-sytem run-container run-vm
+.PHONY: geiser-repl update-lockfile build-sytem run-container run-vm foreign-host-rebuild
 
 geiser-repl:
 	$(guix) repl --listen=tcp:37146
@@ -46,10 +46,19 @@ build/fs: configuration.scm channels.lock.scm --build-dirs
 	mkdir -p build/fs
 # todo: load these definitions from configuration.scm through gnu make's guile support
 	sudo mount -L serena -o no-atime,discard=async,ssd,subvol=@ -m build/fs/
-	sudo mount -L serena -o no-atime,discard=async,ssd,subvol=@aetheria-store -m build/fs/gnu/store 
+	sudo mount -L serena -o no-atime,discard=async,ssd,subvol=@aetheria-store -m build/fs/gnu/store
 	sudo mount -L serena -o no-atime,discard=async,ssd,subvol=@aetheria-meta -m build/fs/var/guix
 	sudo mount -L BOOTTMP -m build/fs/boot
 	sudo $(guix) system init -v $(VERBOSITY) configuration.scm build/fs
+	sudo umount build/fs/boot
+	sudo umount build/fs/var/guix
+	sudo umount build/fs/gnu/store
+	sudo umount build/fs/
+foreign-host-rebuild: build/fs
+	sudo rm -r build/fs
 
 clean:
-	rm -rf build
+	rm build/tmp/run-vm
+	rm build/tmp/system
+	rm build/tmp/channels
+	rm build/tmp/run-container
