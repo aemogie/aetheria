@@ -11,7 +11,8 @@ geiser-repl:
 	@mkdir -p build/tmp
 
 build/tmp/channels.lock.scm: --build-dirs
-	guix time-machine -C channels.scm -- describe -f channels > build/tmp/channels.lock.scm || exit 1
+	echo "(use-modules (guix channels))" > build/tmp/channels.lock.scm
+	guix time-machine -C channels.scm -- describe -f channels >> build/tmp/channels.lock.scm || exit 1
 # doesnt depend on channels.scm as you might need to update lockfile without updating channels
 update-lockfile: build/tmp/channels.lock.scm
 	rm channels.lock.scm

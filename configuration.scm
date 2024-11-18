@@ -4,9 +4,10 @@
 (use-modules (gnu)
 	     (gnu bootloader)
 	     (gnu bootloader grub)
-	     (gnu services desktop)
 	     (nongnu packages linux)
-	     (nongnu system linux-initrd))
+	     (nongnu system linux-initrd)
+	     (gnu services desktop)
+	     (gnu packages package-management))
 
 (operating-system
   (kernel linux)
@@ -25,7 +26,20 @@
 
   (packages (cons* ;; TODO: add wm?
 	     %base-packages))
-  (services %desktop-services)
+  (services (modify-services %desktop-services
+	      ;; dont think this is how it's supposed to be done, it recomputes the channel on each build
+	      ;; TODO: maybe look into inferiors? does that solve this?
+	      (guix-service-type
+	       config =>
+	       (let ((channels (load "channels.lock.scm")))
+		 (guix-configuration
+		  (inherit config)
+		  (channels channels)
+		  (guix (guix-for-channels channels))
+		  (substitute-urls (cons* "https://substitutes.nonguix.org"
+					  %default-substitute-urls))
+		  (authorized-keys (cons* (local-file "substitutes/nonguix.pub")
+					  %default-authorized-guix-keys)))))))
 
   (bootloader
    (bootloader-configuration
