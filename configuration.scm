@@ -12,6 +12,9 @@
 (operating-system
   (kernel linux)
   (initrd microcode-initrd)
+  (initrd-modules (cons*
+		   "vmd" ;; intel vmd so it sees my disks
+		   %base-initrd-modules))
   (firmware (list linux-firmware))
   (host-name "serena")
   (timezone "Asia/Colombo")
