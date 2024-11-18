@@ -57,6 +57,9 @@ build/fs: configuration.scm channels.lock.scm --build-dirs
 foreign-host-rebuild: build/fs
 	sudo rm -r build/fs
 
+reconfigure: configuration.scm channels.lock.scm
+	sudo $(guix) system reconfigure -v $(VERBOSITY) configuration.scm
+
 clean:
 	rm build/tmp/run-vm
 	rm build/tmp/system
