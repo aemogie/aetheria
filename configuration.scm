@@ -10,10 +10,7 @@
 	     (gnu services xorg)
 	     (gnu packages package-management)
              (gnu packages wm)
-             (gnu packages gnuzilla)
-	     (gnu packages emacs)
-             (gnu packages emacs-xyz)
-	     (gnu packages fonts))
+             (gnu packages gnuzilla))
 
 (operating-system
   (kernel linux)
@@ -33,10 +30,8 @@
                 (supplementary-groups '("wheel" "netdev" "audio" "video")))
 	       %base-user-accounts))
 
-  (packages (cons* ;; TODO: add wm?
-             font-iosevka-comfy
+  (packages (cons* ;; TODO: move to home config
              cage icecat ;; good enough
-	     emacs-next-pgtk-xwidgets
              gnu-make ;; for `make reconfigure`
 	     %base-packages))
   (services (modify-services %desktop-services
