@@ -40,11 +40,11 @@
 	      ;; TODO: maybe look into inferiors? does that solve this?
 	      (guix-service-type
 	       config =>
-	       (let ((channels (load "channels.lock.scm")))
+	       (let ();; (channels (load "channels.lock.scm")))
 		 (guix-configuration
 		  (inherit config)
-		  (channels channels)
-		  (guix (guix-for-channels channels))
+		  ;; (channels channels)
+		  ;; (guix (guix-for-channels channels))
 		  (substitute-urls (cons* "https://substitutes.nonguix.org"
 					  %default-substitute-urls))
 		  (authorized-keys (cons* (local-file "substitutes/nonguix.pub")
