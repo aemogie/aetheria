@@ -56,7 +56,7 @@
     (targets '("/boot"))))
 
   (file-systems ;; WIP
-   (let ((boot-part (file-system-label "serena-boot"))
+   (let ((boot-part (file-system-label "BOOTTMP"))
 	 (root-part (file-system-label "serena"))
 	 (pers-part (file-system-label "serena-persist"))
 	 (nivea-home-part (file-system-label "NIXHOME"))
@@ -98,13 +98,22 @@
        	(type "ext4")
 	(flags '(read-only)))
       (file-system
-        (mount-point "/mnt/nivea/home")
-        (device nivea-home-part)
-        (type "ext4")
-	(flags '(read-only)))
-      (file-system
        (mount-point "/nix/store")
        (device "/mnt/nivea/nix/store")
+       (type "none")
+       (flags '(bind-mount read-only)))
+      (file-system
+        (mount-point "/mnt/nivea/home")
+        (device nivea-home-part)
+        (type "ext4"))
+      (file-system
+       (mount-point "/home/aemogie/config")
+       (device "/mnt/nivea/home/aemogie/dev/aetheria")
+       (type "none")
+       (flags '(bind-mount)))
+      (file-system
+       (mount-point "/home/aemogie/guix")
+       (device "/mnt/nivea/home/aemogie/dev/vendor/guix")
        (type "none")
        (flags '(bind-mount read-only)))
       %base-file-systems))))
