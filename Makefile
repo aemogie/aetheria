@@ -2,7 +2,7 @@ guix := guix time-machine -C channels.lock.scm --
 
 VERBOSITY ?= 3
 
-.PHONY: geiser-repl update-lockfile build-sytem run-container run-vm foreign-host-rebuild
+.PHONY: geiser-repl update-lockfile build-system run-container run-vm foreign-host-rebuild
 
 geiser-repl:
 	$(guix) repl --listen=tcp:37146
