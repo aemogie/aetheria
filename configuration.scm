@@ -69,10 +69,13 @@
       (file-system
 	(mount-point "/")
 	(needed-for-boot? #t)
-	(device root-part)
-	(type "btrfs")
-	(flags '(no-atime))
-	(options "subvol=@,discard=async,ssd"))
+	;; (device root-part)
+	;; (type "btrfs")
+	;; (flags '(no-atime))
+	;; (options "subvol=@,discard=async,ssd")
+	(device "none")
+	(type "tmpfs")
+	(check? #f))
       (file-system
 	(mount-point "/gnu/store")
 	(needed-for-boot? #t)
@@ -107,12 +110,12 @@
         (device nivea-home-part)
         (type "ext4"))
       (file-system
-       (mount-point "/home/aemogie/config")
+       (mount-point "/tmp/config")
        (device "/mnt/nivea/home/aemogie/dev/aetheria")
        (type "none")
        (flags '(bind-mount)))
       (file-system
-       (mount-point "/home/aemogie/guix")
+       (mount-point "/tmp/guix")
        (device "/mnt/nivea/home/aemogie/dev/vendor/guix")
        (type "none")
        (flags '(bind-mount read-only)))
