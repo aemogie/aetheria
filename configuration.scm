@@ -122,4 +122,36 @@
         (device "/mnt/nivea/home/aemogie/dev/vendor/guix")
         (type "none")
         (flags '(bind-mount read-only)))
+      (file-system
+        (mount-point "/persist/old")
+        (device root-part)
+        (type "btrfs")
+        (flags '(no-atime))
+        (options "subvol=@,discard=async,ssd"))
+      ;; guix needs it's cache directories, so provide it until i figure out
+      ;; granular opt-in
+      ;; FIXME: this somehow stops `user-homes` from making the directory.
+      ;; user-homes checks if `directory-exists?`, so this should only run after it does that
+      (file-system
+        (mount-point "/root/.cache/guix")
+        (device "/persist/old/root/.cache/guix")
+        (type "none")
+        (flags '(bind-mount))
+        ;; but this doesnt work? why?
+        (shepherd-requirements '(user-homes)))
+      ;; idk which of these guix needs, but having both fixes the cache issue
+      (file-system
+        (mount-point "/root/.config/guix")
+        (device "/persist/old/root/.config/guix")
+        (type "none")
+        (flags '(bind-mount))
+        (shepherd-requirements '(user-homes)))
+      ;; just a lil script that runs emacs from github.com/aemogie/nivea
+      ;; and i didnt know you can bind mount files until now
+      (file-system
+        (mount-point "/usr/bin/emacs")
+        (device "/persist/old/home/aemogie/emacs")
+        (type "none")
+        (flags '(bind-mount))
+        (shepherd-requirements '(user-homes)))
       %base-file-systems))))
