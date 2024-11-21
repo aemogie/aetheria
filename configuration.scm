@@ -32,102 +32,111 @@
       (authorized-keys (cons* (local-file "substitutes/nonguix.pub")
                               %default-authorized-guix-keys))))))
 
+;; TODO: move to module
 (define (aetheria-file-systems)
-  (define boot-part (file-system-label "BOOTTMP"))
-  (define root-part (file-system-label "serena"))
-  (define pers-part (file-system-label "serena-persist"))
-  (define nivea-home-part (file-system-label "NIXHOME"))
-  (define nivea-part (file-system-label "NIXOS"))
+  ;; TOOD: figure out how to change grub.cfg path, then migrate to serena-boot
+  (define boot
+    (file-system
+      (device (file-system-label "BOOTTMP"))
+      (mount-point "/boot")
+      (type "vfat")))
+
+  (define (serena-part subvol mount-point)
+    (file-system
+      (mount-point mount-point)
+      (device (file-system-label "serena"))
+      (type "btrfs")
+      (flags '(no-atime))
+      (options (format #f "subvol=~a,discard=async,ssd" subvol))))
+  (define rootfs
+    (file-system
+      (inherit (serena-part "@" "/"))
+      (needed-for-boot? #t)
+      ;; TODO: figure out how to wipe+snapshot btrfs on boot
+      ;; tmpfs till then
+      (device "none")
+      (type "tmpfs")
+      (options #f)))
+  (define aetheria-store
+    (file-system
+      (inherit (serena-part "@aetheria-store" "/gnu/store"))
+      (needed-for-boot? #t)))
+  (define aetheria-meta (serena-part "@aetheria-meta" "/var/guix"))
+
+  (define nivea
+    (file-system
+      (mount-point "/mnt/nivea")
+      (device (file-system-label "NIXOS"))
+      (type "ext4")
+      (flags '(read-only))))
+
+  (define persist-part
+    (file-system
+      (mount-point "/@persist")
+      (device (file-system-label "serena-persist"))
+      (type "btrfs")
+      (flags '(no-atime))))
+
+  (define nivea-home ;; migrate to serena-persist btrfs pool
+    (file-system
+      (mount-point "/mnt/nivea/home")
+      (device (file-system-label "NIXHOME"))
+      (type "ext4")
+      (dependencies (list nivea))))
+
+  ;; TODO: rsync this to the serena btrfs pool, the only bind mounts should be from /@persist
+  (define nivea-store
+    (file-system
+      (mount-point "/nix/store")
+      (device "/mnt/nivea/nix/store")
+      (type "none")
+      (flags '(bind-mount no-atime read-only))
+      (dependencies (list nivea))))
+
+  ;; FIXME: this somehow stops `user-homes` from making the directory.
+  ;; user-homes checks if `directory-exists?`, so this should only run after it does that
+  (define (persist path)
+    (file-system
+      (mount-point path)
+      (device (format #f "/@persist/~a" path))
+      (type "none")
+      (flags '(bind-mount no-atime))
+      (dependencies (list persist-part))
+      ;; FIXME: this doesnt work, still stops user home from being generated
+      ;; user-homes activation checks if `directory-exists?`, that must mean
+      ;; it was atleast created before that
+      (shepherd-requirements '(user-homes))
+      ;; would this fix it? but that's the default anyway. plus even if it
+      ;; worked, won't it break stuff?
+      (create-mount-point? #f)
+      (mount-may-fail? #t)))
+
   (list
-   (file-system
-     (device boot-part)
-     (mount-point "/boot")
-     (type "vfat"))
-   (file-system
-     (mount-point "/")
-     (needed-for-boot? #t)
-     ;; (device root-part)
-     ;; (type "btrfs")
-     ;; (flags '(no-atime))
-     ;; (options "subvol=@,discard=async,ssd")
-     (device "none")
-     (type "tmpfs")
-     (check? #f))
-   (file-system
-     (mount-point "/gnu/store")
-     (needed-for-boot? #t)
-     (device root-part)
-     (type "btrfs")
-     (flags '(no-atime))
-     (options "subvol=@aetheria-store,discard=async,ssd"))
-   (file-system
-     (mount-point "/var/guix")
-     (needed-for-boot? #t)
-     (device root-part)
-     (type "btrfs")
-     (flags '(no-atime))
-     (options "subvol=@aetheria-meta,discard=async,ssd"))
-   (file-system
-     (mount-point "/persist")
-     (device pers-part)
-     (type "btrfs")
-     (flags '(no-atime)))
-   (file-system
-     (mount-point "/mnt/nivea")
-     (device nivea-part)
-     (type "ext4")
-     (flags '(read-only)))
-   (file-system
-     (mount-point "/nix/store")
-     (device "/mnt/nivea/nix/store")
-     (type "none")
-     (flags '(bind-mount read-only)))
-   (file-system
-     (mount-point "/mnt/nivea/home")
-     (device nivea-home-part)
-     (type "ext4"))
-   (file-system
-     (mount-point "/tmp/config")
-     (device "/mnt/nivea/home/aemogie/dev/aetheria")
-     (type "none")
-     (flags '(bind-mount)))
-   (file-system
-     (mount-point "/tmp/guix")
-     (device "/mnt/nivea/home/aemogie/dev/vendor/guix")
-     (type "none")
-     (flags '(bind-mount read-only)))
-   (file-system
-     (mount-point "/persist/old")
-     (device root-part)
-     (type "btrfs")
-     (flags '(no-atime))
-     (options "subvol=@,discard=async,ssd"))
-   ;; guix needs it's cache directories, so provide it until i figure out
-   ;; granular opt-in
-   ;; FIXME: this somehow stops `user-homes` from making the directory.
-   ;; user-homes checks if `directory-exists?`, so this should only run after it does that
-   (file-system
-     (mount-point "/root/.cache/guix")
-     (device "/persist/old/root/.cache/guix")
-     (type "none")
-     (flags '(bind-mount))
-     ;; but this doesnt work? why?
-     (shepherd-requirements '(user-homes)))
-   ;; idk which of these guix needs, but having both fixes the cache issue
-   (file-system
-     (mount-point "/root/.config/guix")
-     (device "/persist/old/root/.config/guix")
-     (type "none")
-     (flags '(bind-mount))
-     (shepherd-requirements '(user-homes)))
-   ;; just a lil script that runs emacs from github.com/aemogie/nivea
-   ;; and i didnt know you can bind mount files until now
-   (file-system
-     (mount-point "/usr/bin/emacs")
-     (device "/persist/old/home/aemogie/emacs")
-     (type "none")
-     (flags '(bind-mount))
-     (shepherd-requirements '(user-homes)))))
+   ;; 256gb ssd
+   boot           ;; /boot
+   rootfs         ;; / (overriden temporarily to tmpfs)
+   aetheria-store ;; /gnu/store
+   aetheria-meta  ;; /var/guix
+   nivea          ;; /mnt/nivea
+
+   ;; 1tb hdd
+   persist-part ;; /@persist
+   nivea-home   ;; /mnt/nivea/home
+
+   ;; bind-mounts (to be removed)
+   nivea-store ;; /nix/store
+
+   ;; persist
+   (persist "/root/.cache/guix") ;; guix caches channel checkouts here
+   ;; (persist "/home/aemogie/.cache/guix")
+
+   (persist "/etc/NetworkManager/system-connections") ;; TODO: figure out sops-guix
+
+   ;; persist icecat profile (for irc password)
+   (persist "/root/.mozilla/icecat") ;; use sudo for icecat, im not breaking my user home
+
+   (persist "/tmp/emacs") ;; a hacky script to launch nivea's emacs for now
+   (persist "/projects")))
 
 (operating-system
   (kernel linux)
