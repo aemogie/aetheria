@@ -1,6 +1,8 @@
 guix := guix time-machine -C channels.lock.scm --
+sources := $(wildcard aetheria/**/*.scm)
 
-VERBOSITY ?= 3
+hostname ?= $(shell hostname)
+verbosity ?= 3
 
 .PHONY: geiser-repl update-lockfile build-system run-container run-vm clean
 
@@ -19,31 +21,30 @@ update-lockfile: build/tmp/channels.lock.scm
 	mv build/tmp/channels.lock.scm channels.lock.scm
 
 
-build/system: configuration.scm channels.lock.scm --build-dirs
-	$(guix) system build -v $(VERBOSITY) configuration.scm -r"build/tmp/system" || exit 1
+build/system: $(sources) channels.lock.scm --build-dirs
+	$(guix) system build -v $(verbosity) -L. aetheria/hosts/$(hostname).scm -r"build/tmp/system" || exit 1
 	rm -f build/system
 	mv build/tmp/system build/system
 build-system: build/system
 
-
-build/run-container: configuration.scm channels.lock.scm --build-dirs
-	$(guix) system container -v $(VERBOSITY) configuration.scm -r"build/tmp/run-container" || exit 1
+build/run-container: $(sources) channels.lock.scm --build-dirs
+	$(guix) system container -v $(verbosity) -L. aetheria/hosts/$(hostname).scm -r"build/tmp/run-container" || exit 1
 	rm -f build/run-container
 	mv build/tmp/run-container build/run-container
 
 run-container: build/run-container
 	sudo build/run-container --share="$(shell pwd)=/config"
 
-build/run-vm: configuration.scm channels.lock.scm --build-dirs
-	$(guix) system vm -v $(VERBOSITY) --full-boot -r"build/tmp/run-vm" configuration.scm || exit 1
+build/run-vm: $(sources) channels.lock.scm --build-dirs
+	$(guix) system vm -v $(verbosity) --full-boot -r"build/tmp/run-vm" -L. aetheria/hosts/$(hostname).scm || exit 1
 	rm -f build/run-vm
 	mv build/tmp/run-vm build/run-vm
 
 run-vm: build/run-vm
 	build/run-vm
 
-reconfigure: configuration.scm channels.lock.scm
-	sudo $(guix) system reconfigure -v $(VERBOSITY) configuration.scm
+reconfigure: $(sources) channels.lock.scm
+	sudo $(guix) system reconfigure -v $(verbosity) -L. aetheria/hosts/$(hostname).scm
 
 clean_link = @[[ -h $(1) ]] && rm $(1) || echo "clean: skipping $(1)"
 clean_dir = @[[ -d $(1) ]] && rmdir $(1) || echo "clean: skipping $(1)"
