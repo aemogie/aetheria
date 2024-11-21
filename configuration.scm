@@ -8,7 +8,6 @@
              (nongnu system linux-initrd)
              (gnu services desktop)
              (gnu services xorg)
-             (gnu packages package-management)
              (gnu packages wm)
              (gnu packages gnuzilla))
 
@@ -149,14 +148,11 @@
   (timezone "Asia/Colombo")
   (locale "en_GB.utf8")
 
-  (users
-   (append aetheria-accounts %base-user-accounts))
+  (users (append aetheria-accounts %base-user-accounts))
 
   (packages ;; TODO: move to home config
-   (cons*
-    cage icecat ;; good enough to begin
-    gnu-make	;; for `make reconfigure`
-    %base-packages))
+   (cons* cage icecat ;; good enough to begin
+          %base-packages))
   (services aetheria-services)
 
   (bootloader
