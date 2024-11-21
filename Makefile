@@ -2,7 +2,7 @@ guix := guix time-machine -C channels.lock.scm --
 
 VERBOSITY ?= 3
 
-.PHONY: geiser-repl update-lockfile build-system run-container run-vm foreign-host-rebuild
+.PHONY: geiser-repl update-lockfile build-system run-container run-vm clean
 
 geiser-repl:
 	$(guix) repl --listen=tcp:37146
@@ -21,14 +21,14 @@ update-lockfile: build/tmp/channels.lock.scm
 
 build/system: configuration.scm channels.lock.scm --build-dirs
 	$(guix) system build -v $(VERBOSITY) configuration.scm -r"build/tmp/system" || exit 1
-	rm build/system
+	rm -f build/system
 	mv build/tmp/system build/system
 build-system: build/system
 
 
 build/run-container: configuration.scm channels.lock.scm --build-dirs
 	$(guix) system container -v $(VERBOSITY) configuration.scm -r"build/tmp/run-container" || exit 1
-	rm build/run-container
+	rm -f build/run-container
 	mv build/tmp/run-container build/run-container
 
 run-container: build/run-container
@@ -36,32 +36,27 @@ run-container: build/run-container
 
 build/run-vm: configuration.scm channels.lock.scm --build-dirs
 	$(guix) system vm -v $(VERBOSITY) --full-boot -r"build/tmp/run-vm" configuration.scm || exit 1
-	rm build/run-vm
+	rm -f build/run-vm
 	mv build/tmp/run-vm build/run-vm
 
 run-vm: build/run-vm
 	build/run-vm
 
-build/fs: configuration.scm channels.lock.scm --build-dirs
-	mkdir -p build/fs
-# todo: load these definitions from configuration.scm through gnu make's guile support
-	sudo mount -L serena -o no-atime,discard=async,ssd,subvol=@ -m build/fs/
-	sudo mount -L serena -o no-atime,discard=async,ssd,subvol=@aetheria-store -m build/fs/gnu/store
-	sudo mount -L serena -o no-atime,discard=async,ssd,subvol=@aetheria-meta -m build/fs/var/guix
-	sudo mount -L BOOTTMP -m build/fs/boot
-	sudo $(guix) system init -v $(VERBOSITY) configuration.scm build/fs
-	sudo umount build/fs/boot
-	sudo umount build/fs/var/guix
-	sudo umount build/fs/gnu/store
-	sudo umount build/fs/
-foreign-host-rebuild: build/fs
-	sudo rm -r build/fs
-
 reconfigure: configuration.scm channels.lock.scm
 	sudo $(guix) system reconfigure -v $(VERBOSITY) configuration.scm
 
+clean_link = @[[ -h $(1) ]] && rm $(1) || echo "clean: skipping $(1)"
+clean_dir = @[[ -d $(1) ]] && rmdir $(1) || echo "clean: skipping $(1)"
+
 clean:
-	rm build/tmp/run-vm
-	rm build/tmp/system
-	rm build/tmp/channels
-	rm build/tmp/run-container
+	$(call clean_link,build/tmp/run-vm)
+	$(call clean_link,build/tmp/system)
+	$(call clean_link,build/tmp/channels)
+	$(call clean_link,build/tmp/run-container)
+	$(call clean_dir,build/tmp/)
+
+	$(call clean_link,build/run-vm)
+	$(call clean_link,build/system)
+	$(call clean_link,build/channels)
+	$(call clean_link,build/run-container)
+	$(call clean_dir,build/)
