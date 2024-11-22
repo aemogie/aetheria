@@ -1,4 +1,4 @@
-(define-module (aetheria system)
+(define-module (aetheria system base)
   ;; modify-services uses this?? but i thought macros were hygenic
   #:use-module ((srfi srfi-1) #:select (delete))
   #:use-module ((gnu services) #:select (service
@@ -10,8 +10,8 @@
                                               %default-substitute-urls
                                               %default-authorized-guix-keys))
   #:use-module ((gnu services guix) #:select (guix-home-service-type))
-  #:use-module ((gnu system) #:select (operating-system
-                                       %base-packages))
+  #:use-module ((gnu system) #:select (%base-packages
+                                       operating-system))
   #:use-module ((gnu system accounts) #:select (user-account))
   #:use-module ((gnu system shadow) #:select (%base-user-accounts))
   #:use-module ((gnu system file-systems) #:select (%base-file-systems))
@@ -21,13 +21,13 @@
   #:use-module ((gnu bootloader grub) #:select (grub-efi-bootloader))
   #:use-module ((guix gexp) #:select (local-file))
   #:use-module ((aetheria) #:select (%project-root))
-  #:use-module ((aetheria home users aemogie) #:select (home-config) #:prefix aemogie:)
-  #:export (%aetheria-operating-system))
+  #:use-module ((aetheria home aemogie) #:select (aemogie))
+  #:export (%aetheria-base-system))
 
 (define services
   (cons*
    (service guix-home-service-type
-            `(("aemogie" ,aemogie:home-config)))
+            `(("aemogie" ,aemogie)))
    (modify-services %desktop-services
      (delete gdm-service-type)
      ;; TODO: figure out how to set system-wide channel in a non-annoying way
@@ -49,7 +49,7 @@
          (password (crypt "password" "$6$aetheria"))
          (supplementary-groups '("wheel" "netdev" "audio" "video")))))
 
-(define %aetheria-operating-system
+(define %aetheria-base-system
   (operating-system
     (host-name "aetheria")
     (bootloader (bootloader-configuration

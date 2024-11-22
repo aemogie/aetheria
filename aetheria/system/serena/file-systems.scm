@@ -1,4 +1,4 @@
-(define-module (aetheria hosts serena file-systems)
+(define-module (aetheria system serena file-systems)
   #:use-module ((gnu system file-systems) #:select (file-system-label
                                                     file-system
                                                     %base-file-systems))
@@ -76,7 +76,8 @@
    persist-part   ;; /@persist
    nivea-home))   ;; /mnt/nivea/home
 
-;; move to new module in (aetheria system) when repopulating comes
+;; TODO: move to (aetheria system persist) or (aetheria services persist)
+;; when repopulating comes depending on how i implement it
 (define serena-persist
   (map (lambda (p) (persist-bind persist-part p))
        '("/etc/NetworkManager/system-connections" ;; TODO: figure out sops-guix
