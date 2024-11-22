@@ -1,13 +1,15 @@
 (define-module (aetheria system)
   ;; modify-services uses this?? but i thought macros were hygenic
   #:use-module ((srfi srfi-1) #:select (delete))
-  #:use-module ((gnu services) #:select (modify-services))
+  #:use-module ((gnu services) #:select (service
+                                         modify-services))
   #:use-module ((gnu services desktop) #:select (%desktop-services))
   #:use-module ((gnu services xorg) #:select (gdm-service-type))
   #:use-module ((gnu services base) #:select (guix-service-type
                                               guix-configuration
                                               %default-substitute-urls
                                               %default-authorized-guix-keys))
+  #:use-module ((gnu services guix) #:select (guix-home-service-type))
   #:use-module ((gnu system) #:select (operating-system
                                        %base-packages))
   #:use-module ((gnu system accounts) #:select (user-account))
@@ -19,22 +21,26 @@
   #:use-module ((gnu bootloader grub) #:select (grub-efi-bootloader))
   #:use-module ((guix gexp) #:select (local-file))
   #:use-module ((aetheria) #:select (%project-root))
+  #:use-module ((aetheria home users aemogie) #:select (home-config) #:prefix aemogie:)
   #:export (%aetheria-operating-system))
 
 (define services
-  (modify-services %desktop-services
-    (delete gdm-service-type)
-    ;; TODO: figure out how to set system-wide channel in a non-annoying way
-    (guix-service-type
-     config =>
-     (guix-configuration
-      (inherit config)
-      (substitute-urls (cons* "https://substitutes.nonguix.org"
-                              %default-substitute-urls))
-      (authorized-keys (cons* (local-file (string-append %project-root "/substitutes/nonguix.pub"))
-                              %default-authorized-guix-keys))))
-    )
-  )
+  (cons*
+   (service guix-home-service-type
+            `(("aemogie" ,aemogie:home-config)))
+   (modify-services %desktop-services
+     (delete gdm-service-type)
+     ;; TODO: figure out how to set system-wide channel in a non-annoying way
+     (guix-service-type config =>
+                        (guix-configuration
+                         (inherit config)
+                         (substitute-urls
+                          (cons* "https://substitutes.nonguix.org"
+                                 %default-substitute-urls))
+                         (authorized-keys
+                          (cons* (local-file
+                                  (string-append %project-root "/substitutes/nonguix.pub"))
+                                 %default-authorized-guix-keys)))))))
 
 (define accounts
   (list (user-account
