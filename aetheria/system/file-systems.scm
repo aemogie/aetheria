@@ -1,5 +1,6 @@
 (define-module (aetheria system file-systems)
-  #:use-module (gnu system file-systems)
+  #:use-module ((gnu system file-systems) #:select (file-system-mount-point
+                                                    file-system))
   #:export (btrfs-file-system
             persist-bind
             remount-read-only))
