@@ -9,8 +9,8 @@
        "/projects/aetheria"))
 
 (define* (config-for-os #:optional (hostname (gethostname)))
-  (define host-file-name (string-append "aetheria/hosts/" hostname ".scm"))
-  (define os (primitive-load-path host-file-name)) ;; the default error is good enough
+  (define host-file-name (string-append "aetheria/system/" hostname ".scm"))
+  (define os (primitive-load-path host-file-name)) ;; the default not-found error is good enough
   (unless (operating-system? os)
     (error "file ~a doesn't produce an <operating-system>" host-file-name))
   os)

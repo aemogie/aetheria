@@ -1,7 +1,7 @@
 ;; This is a sample Guix Home configuration which can help setup your
 ;; home directory in the same declarative manner as Guix System.
 ;; For more information, see the Home Configuration section of the manual.
-(define-module (aetheria home users aemogie)
+(define-module (aetheria home aemogie)
   #:use-module (gnu home)
   #:use-module (gnu home services)
   #:use-module (gnu home services shells)
@@ -9,9 +9,9 @@
   #:use-module (gnu home services sound)
   #:use-module (gnu services)
   #:use-module (gnu system shadow)
-  #:export (home-config))
+  #:export (aemogie))
 
-(define home-config
+(define aemogie
   (home-environment
     (services
       (list
@@ -28,4 +28,4 @@
          `(("gdb/gdbinit" ,%default-gdbinit)
            ("nano/nanorc" ,%default-nanorc)))))))
 
-home-config
+aemogie
