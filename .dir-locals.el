@@ -10,10 +10,6 @@
 
      (eval . (add-to-list 'completion-ignored-extensions ".go"))
 
-     ;; Emacs-Guix
-     (eval . (setq-local guix-directory
-                         (locate-dominating-file default-directory
-                                                 ".dir-locals.el")))
      ;; Geiser
      ;; This allows automatically setting the `geiser-guile-load-path'
      ;; variable when using various Guix checkouts (e.g., via git worktrees).
