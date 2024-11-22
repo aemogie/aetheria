@@ -20,6 +20,9 @@
         ;(service home-fish-service-type)
         ;(service home-zsh-service-type)
 
+        (service home-dbus-service-type)
+        (service home-pipewire-service-type)
+
         (service home-files-service-type
                  `((".guile" ,%default-dotguile)
                    (".Xdefaults" ,%default-xdefaults)))
