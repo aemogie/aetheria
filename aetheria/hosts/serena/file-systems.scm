@@ -1,6 +1,9 @@
 (define-module (aetheria hosts serena file-systems)
-  #:use-module (gnu system file-systems)
-  #:use-module (aetheria system file-systems)
+  #:use-module ((gnu system file-systems) #:select (file-system-label
+                                                    file-system
+                                                    %base-file-systems))
+  #:use-module ((aetheria system file-systems) #:select (btrfs-file-system
+                                                         persist-bind))
   #:export (serena-file-systems))
 
 ;; TOOD: figure out how to change grub.cfg path, then migrate to serena-boot
