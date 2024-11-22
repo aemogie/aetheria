@@ -2,7 +2,8 @@
   #:use-module ((gnu system) #:select (operating-system))
   #:use-module ((gnu system linux-initrd) #:select (%base-initrd-modules))
   #:use-module ((nongnu packages linux) #:select (linux
-                                                  linux-firmware))
+                                                  linux-firmware
+                                                  sof-firmware))
   #:use-module ((nongnu system linux-initrd) #:select (microcode-initrd))
   #:use-module ((aetheria system base) #:select (%aetheria-base-system))
   #:use-module ((aetheria system serena file-systems) #:select (serena-file-systems))
@@ -20,7 +21,8 @@
     (initrd-modules
      (cons* "vmd" ;; intel vmd so it sees my disks
             %base-initrd-modules))
-    (firmware (list linux-firmware))
+    (firmware (list linux-firmware
+                    sof-firmware))
     (file-systems serena-file-systems)))
 
 ;; consumed by (@ (aetheria) config-for-os)
