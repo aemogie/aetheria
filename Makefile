@@ -1,10 +1,19 @@
 verbosity ?= 3
+system ?= $(shell hostname)
+home ?= $(shell whoami)
 
 guix := guix time-machine -C channels.lock.scm --
 sources := $(wildcard aetheria/**/*.scm)
-guix_system_options := -v $(verbosity) -L. -e "((@ (aetheria) config-for-os))"
+guix_system_options := -v $(verbosity) -L. -e '((@ (aetheria) system-config) "$(system)")'
+guix_home_options := -v $(verbosity) -L. -e '((@ (aetheria) home-config) "$(home)")'
 
-.PHONY: geiser-repl update-lockfile build-system run-container run-vm clean
+.PHONY: system home geiser-repl --build-dirs update-lockfile system-container home-container run-vm style! clean
+
+system: $(sources) channels.lock.scm
+	sudo $(guix) system reconfigure $(guix_system_options)
+
+home: $(sources) channels.lock.scm
+	 $(guix) home reconfigure $(guix_home_options)
 
 geiser-repl:
 	$(guix) repl --listen=tcp:37146
@@ -20,20 +29,24 @@ update-lockfile: build/tmp/channels.lock.scm
 	rm channels.lock.scm
 	mv build/tmp/channels.lock.scm channels.lock.scm
 
-
 build/system: $(sources) channels.lock.scm --build-dirs
 	$(guix) system build $(guix_system_options) -r"build/tmp/system" || exit 1
 	rm -f build/system
 	mv build/tmp/system build/system
-build-system: build/system
+
+build/home: $(sources) channels.lock.scm --build-dirs
+	$(guix) home build $(guix_home_options) # why no gcroot option?
 
 build/run-container: $(sources) channels.lock.scm --build-dirs
 	$(guix) system container $(guix_system_options) -r"build/tmp/run-container" || exit 1
 	rm -f build/run-container
 	mv build/tmp/run-container build/run-container
 
-run-container: build/run-container
+system-container: build/run-container
 	sudo build/run-container --share="$(shell pwd)=/config"
+
+home-container: $(sources) channels.lock.scm --build-dirs
+	$(guix) home container $(guix_home_options)
 
 build/run-vm: $(sources) channels.lock.scm --build-dirs
 	$(guix) system vm $(guix_system_options) --full-boot -r"build/tmp/run-vm" || exit 1
@@ -43,21 +56,41 @@ build/run-vm: $(sources) channels.lock.scm --build-dirs
 run-vm: build/run-vm
 	build/run-vm
 
-reconfigure: $(sources) channels.lock.scm
-	sudo $(guix) system reconfigure $(guix_system_options)
+# this makes (define-module #:use-module ((...) #:select (...)))
+# ugly as it tries to be smart when it shouldnt
+style!: $(sources)
+	$(guix) style $(foreach src,$(sources), -f $(src))
 
-clean_link = @[[ -h $(1) ]] && rm $(1) || echo "clean: skipping $(1)"
-clean_dir = @[[ -d $(1) ]] && rmdir $(1) || echo "clean: skipping $(1)"
+define clean_file
+@if [ -f $(1) ]; then \
+  rm $(1) && echo "clean: removed $(1)" || echo "clean: couldn't remove '$(1)'"; \
+elif [ -e $(1) ] && [ ! -f $(1) ]; then \
+  echo "clean: warning: $(1) exists but is not a regular file"; \
+fi
+endef
+define clean_link
+@if [ -h $(1) ]; then \
+  rm $(1) && echo "clean: removed $(1)" || echo "clean: couldn't remove '$(1)'"; \
+elif [ -e $(1) ] && [ ! -h $(1) ]; then \
+  echo "clean: warning: $(1) exists but is not a symlink"; \
+fi
+endef
+define clean_dir
+@if [ -d $(1) ]; then \
+  rmdir $(1) && echo "clean: removed $(1)" || echo "clean: couldn't remove '$(1)'"; \
+elif [ -e $(1) ] && [ ! -d $(1) ]; then \
+  echo "clean: warning: $(1) exists but is not a directory"; \
+fi
+endef
 
 clean:
-	$(call clean_link,build/tmp/run-vm)
+	$(call clean_file,build/tmp/channels.lock.scm)
 	$(call clean_link,build/tmp/system)
-	$(call clean_link,build/tmp/channels)
+	$(call clean_link,build/tmp/run-vm)
 	$(call clean_link,build/tmp/run-container)
 	$(call clean_dir,build/tmp/)
 
-	$(call clean_link,build/run-vm)
 	$(call clean_link,build/system)
-	$(call clean_link,build/channels)
+	$(call clean_link,build/run-vm)
 	$(call clean_link,build/run-container)
 	$(call clean_dir,build/)
