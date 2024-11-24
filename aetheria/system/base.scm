@@ -21,13 +21,14 @@
   #:use-module ((gnu bootloader grub) #:select (grub-efi-bootloader))
   #:use-module ((guix gexp) #:select (local-file))
   #:use-module ((aetheria) #:select (%project-root))
+  #:use-module ((aetheria home base) #:select (%aetheria-base-home))
   #:use-module ((aetheria home aemogie) #:select (aemogie))
   #:export (%aetheria-base-system))
 
 (define services
   (cons*
-   (service guix-home-service-type
-            `(("aemogie" ,aemogie)))
+   (service guix-home-service-type `(("aemogie" ,aemogie)))
+   (service guix-home-service-type `(("root" ,%aetheria-base-home)))
    (modify-services %desktop-services
      (delete gdm-service-type)
      ;; TODO: figure out how to set system-wide channel in a non-annoying way
