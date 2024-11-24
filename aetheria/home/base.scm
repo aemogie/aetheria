@@ -18,6 +18,7 @@
   #:use-module ((gnu packages emacs) #:select (emacs-next-pgtk-xwidgets))
   #:export (%aetheria-base-home-services
             %aetheria-base-home-packages
+            %aetheria-base-home
             %aetheria-desktop-home-services
             %aetheria-desktop-home-packages
             %aetheria-desktop-home))
