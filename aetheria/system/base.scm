@@ -17,6 +17,7 @@
   #:use-module ((gnu system file-systems) #:select (%base-file-systems))
   #:use-module ((gnu packages wm) #:select (cage))
   #:use-module ((gnu packages gnuzilla) #:select (icecat))
+  #:use-module ((gnu packages package-management) #:select (guix-for-channels))
   #:use-module ((gnu bootloader) #:select (bootloader-configuration))
   #:use-module ((gnu bootloader grub) #:select (grub-efi-bootloader))
   #:use-module ((guix gexp) #:select (local-file))
@@ -25,6 +26,22 @@
   #:use-module ((aetheria home aemogie) #:select (aemogie))
   #:export (%aetheria-base-system))
 
+(define (aetheria-guix prev)
+  ;; TOOD: can i make these be modules?
+  (define locked (primitive-load-path "channels.lock.scm"))
+  (guix-configuration
+   (inherit prev)
+   (channels locked)
+   ;; this isnt cached whatsoever
+   ;; (guix (guix-for-channels locked))
+   (substitute-urls
+    (cons* "https://substitutes.nonguix.org"
+           %default-substitute-urls))
+   (authorized-keys
+    (cons* (local-file
+            (string-append %project-root "/substitutes/nonguix.pub"))
+           %default-authorized-guix-keys))))
+
 (define services
   (cons*
    (service guix-home-service-type `(("aemogie" ,aemogie)))
@@ -32,16 +49,7 @@
    (modify-services %desktop-services
      (delete gdm-service-type)
      ;; TODO: figure out how to set system-wide channel in a non-annoying way
-     (guix-service-type config =>
-                        (guix-configuration
-                         (inherit config)
-                         (substitute-urls
-                          (cons* "https://substitutes.nonguix.org"
-                                 %default-substitute-urls))
-                         (authorized-keys
-                          (cons* (local-file
-                                  (string-append %project-root "/substitutes/nonguix.pub"))
-                                 %default-authorized-guix-keys)))))))
+     (guix-service-type prev => (aetheria-guix prev)))))
 
 (define accounts
   (list (user-account
