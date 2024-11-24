@@ -4,10 +4,6 @@
      (tab-width   .  8)
      (sentence-end-double-space . t)
 
-     ;; For use with 'bug-reference-prog-mode'.  Extra bug-reference
-     ;; configuration should be done in your Emacs user configuration file;
-     ;; refer to (info (guix) The Perfect Setup).
-
      (eval . (add-to-list 'completion-ignored-extensions ".go"))
 
      ;; Geiser
