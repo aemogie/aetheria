@@ -16,6 +16,7 @@
   #:use-module ((gnu packages text-editors) #:select (nano))
   #:use-module ((gnu packages vim) #:select (vim))
   #:use-module ((gnu packages emacs) #:select (emacs-next-pgtk-xwidgets))
+  #:use-module ((guix gexp) #:select (plain-file))
   #:export (%aetheria-base-home-services
             %aetheria-base-home-packages
             %aetheria-base-home
@@ -34,7 +35,11 @@
 
    (service home-xdg-configuration-files-service-type
             `(("gdb/gdbinit" ,%default-gdbinit)
-              ("nano/nanorc" ,%default-nanorc)))))
+              ("nano/nanorc" ,%default-nanorc)
+              ;; should i persist this?
+              ("guix/shell-authorized-directories"
+               ,(plain-file "shell-authorized-directories"
+                            "/projects/aetheria"))))))
 
 (define %aetheria-base-home-packages
   (list gnu-make ;; make for building the system
