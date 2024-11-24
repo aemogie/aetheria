@@ -81,9 +81,11 @@
 (define serena-persist
   (map (lambda (p) (persist-bind persist-part p))
        '("/etc/NetworkManager/system-connections" ;; TODO: figure out sops-guix
-         ;; /root/* should be migrated to guix home's mounts when i get to it
+         ;; should be migrated to guix home's mounts when i get to it
          "/root/.cache/guix" ;; guix caches channel checkouts here
          "/root/.mozilla/icecat" ;; use root for icecat, im not breaking my user home
+         "/home/aemogie/.cache/guix" ;; guix caches channel checkouts here
+         "/home/aemogie/.mozilla/icecat" ;; use root for icecat, im not breaking my user home
          "/tmp/emacs" ;; a hacky script to launch nivea's emacs for now
          "/projects")))
 

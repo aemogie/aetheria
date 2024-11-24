@@ -27,6 +27,7 @@
     (type "none")
     (flags '(bind-mount no-atime))
     (dependencies (list persist-device))
+    (shepherd-requirements '(user-processes))
     (mount-may-fail? #t)))
 
 (define* (remount-read-only path #:key (after '()))
