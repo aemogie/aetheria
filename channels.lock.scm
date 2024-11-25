@@ -17,11 +17,22 @@
             (openpgp-fingerprint
               "2A39 3FFF 68F4 EF7A 3D29  12AF 6F51 20A0 22FB B2D5"))))
       (channel
+        (name 'rosenthal)
+        (url "https://codeberg.org/hako/rosenthal.git")
+        (branch "trunk")
+        (commit
+          "d219e6e52062bea953116763dd1fa602942e2e24")
+        (introduction
+          (make-channel-introduction
+            "7677db76330121a901604dfbad19077893865f35"
+            (openpgp-fingerprint
+              "13E7 6CD6 E649 C28C 3385  4DF5 5E5A A665 6149 17F7"))))
+      (channel
         (name 'guix)
         (url "https://git.savannah.gnu.org/git/guix.git")
         (branch "master")
         (commit
-          "0de78424bd27ec97633401c735e0a766a79b2eee")
+          "47ab553178eb00d02ba9588ed1f7df44fb2f7c4c")
         (introduction
           (make-channel-introduction
             "9edb3f66fd807b096b48283debdcddccfea34bad"
