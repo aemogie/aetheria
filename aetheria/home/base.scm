@@ -13,6 +13,7 @@
   #:use-module ((gnu home services sound) #:select (home-pipewire-service-type))
   #:use-module ((gnu packages base) #:select (gnu-make))
   #:use-module ((gnu packages gcc) #:select (gcc))
+  #:use-module ((gnu packages version-control) #:select (git))
   #:use-module ((gnu packages text-editors) #:select (nano))
   #:use-module ((gnu packages vim) #:select (vim))
   #:use-module ((gnu packages emacs) #:select (emacs-pgtk-xwidgets))
@@ -42,10 +43,10 @@
                             "/projects/aetheria"))))))
 
 (define %aetheria-base-home-packages
-  (list gnu-make ;; make for building the system
-        gcc ;; always have a c compiler too
-        ;; and always have a couple editors i dont touch the config of
-        nano vim))
+  ;; just tiny/essential cli stuff. shouldnt require any graphics, all things
+  ;; you can use over ssh for exmaple. fyi: i dont use vim, but the keybinds
+  ;; are definitely better than whatever nano got
+  (list gnu-make git gcc vim))
 
 (define %aetheria-base-home
   (home-environment
