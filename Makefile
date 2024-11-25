@@ -2,7 +2,11 @@ verbosity ?= 3
 system ?= $(shell hostname)
 home ?= $(shell whoami)
 
-guix := guix time-machine -C channels.lock.scm --
+# do it twice because guile auto compiles the channel file
+# so if the channel definition abi changed we have to compile it again
+# it's cached so negligible on performances
+guix := guix time-machine -C channels.lock.scm -- \
+	     time-machine -C channels.lock.scm --
 sources := $(wildcard aetheria/**/*.scm)
 guix_system_options := -v $(verbosity) -L. -e '((@ (aetheria) system-config) "$(system)")'
 guix_home_options := -v $(verbosity) -L. -e '((@ (aetheria) home-config) "$(home)")'
