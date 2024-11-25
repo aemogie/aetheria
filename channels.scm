@@ -18,7 +18,4 @@
        ;; 	  "7677db76330121a901604dfbad19077893865f35"
        ;; 	  (openpgp-fingerprint
        ;; 	   "13E7 6CD6 E649 C28C 3385  4DF5 5E5A A665 6149 17F7"))))
-       (channel
-	(inherit %default-guix-channel)
-	;; u-build-tools compilation error
-        (commit "4c56d0cccdc44e12484b26332715f54768738c5f")))
+       %default-guix-channel)

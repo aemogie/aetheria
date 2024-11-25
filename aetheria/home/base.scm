@@ -15,7 +15,7 @@
   #:use-module ((gnu packages gcc) #:select (gcc))
   #:use-module ((gnu packages text-editors) #:select (nano))
   #:use-module ((gnu packages vim) #:select (vim))
-  #:use-module ((gnu packages emacs) #:select (emacs-next-pgtk-xwidgets))
+  #:use-module ((gnu packages emacs) #:select (emacs-pgtk-xwidgets))
   #:use-module ((guix gexp) #:select (plain-file))
   #:export (%aetheria-base-home-services
             %aetheria-base-home-packages
@@ -60,7 +60,7 @@
 
 (define %aetheria-desktop-home-packages
   (cons*
-   emacs-next-pgtk-xwidgets ;; TODO: emacs module?
+   emacs-pgtk-xwidgets ;; TODO: emacs module?
    %aetheria-base-home-packages))
 
 (define %aetheria-desktop-home
