@@ -25,9 +25,26 @@ geiser-repl:
 --build-dirs:
 	@mkdir -p build/tmp
 
+# would be cool to some day replace this entire makefile with guile scripts
+# i could also forego calling into the guix binary
+# would have to figure out how to get guix on the load path tho
+# but honestly most of these assume you have guix on your PATH,
+# so assuming guile load path is pretty much the same i guess
+define guile_helpers
+(use-modules ((ice-9 pretty-print) #:select (pretty-print)))
+(define (write-channel-lock-header)
+  (call-with-output-file "build/tmp/channels.lock.scm"
+    (lambda (lockfile)
+      (define header (call-with-input-file "channels.scm" read))
+      (pretty-print header lockfile)
+      (newline lockfile))))
+endef
+$(guile $(guile_helpers))
 build/tmp/channels.lock.scm: --build-dirs
-	echo "(use-modules (guix channels))" > build/tmp/channels.lock.scm
-	guix time-machine -C channels.scm -- describe -f channels >> build/tmp/channels.lock.scm || exit 1
+	$(guile (write-channel-lock-header))
+	guix time-machine -C channels.scm -- time-machine -C channels.scm -- \
+	     describe -f channels >> build/tmp/channels.lock.scm || exit 1
+
 # doesnt depend on channels.scm as you might need to update lockfile without updating channels
 update-lockfile: build/tmp/channels.lock.scm
 	rm channels.lock.scm
