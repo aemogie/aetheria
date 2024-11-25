@@ -15,8 +15,6 @@
   #:use-module ((gnu system accounts) #:select (user-account))
   #:use-module ((gnu system shadow) #:select (%base-user-accounts))
   #:use-module ((gnu system file-systems) #:select (%base-file-systems))
-  #:use-module ((gnu packages wm) #:select (cage))
-  #:use-module ((gnu packages gnuzilla) #:select (icecat))
   #:use-module ((gnu packages package-management) #:select (guix-for-channels))
   #:use-module ((gnu bootloader) #:select (bootloader-configuration))
   #:use-module ((gnu bootloader grub) #:select (grub-efi-bootloader))
@@ -65,8 +63,5 @@
                  (bootloader grub-efi-bootloader)
                  (targets '("/boot"))))
     (users (append accounts %base-user-accounts))
-    (packages
-     (cons* cage icecat ;; good enough to begin
-            %base-packages))
     (services services)
     (file-systems %base-file-systems)))
