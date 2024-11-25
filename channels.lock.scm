@@ -1,4 +1,10 @@
-(use-modules (guix channels))
+(use-modules
+  ((guix channels)
+   #:select
+   (channel
+     make-channel-introduction
+     openpgp-fingerprint)))
+
 (list (channel
         (name 'nonguix)
         (url "https://gitlab.com/nonguix/nonguix")
