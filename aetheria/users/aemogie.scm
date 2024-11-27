@@ -1,4 +1,4 @@
-(define-module (aetheria home aemogie)
+(define-module (aetheria users aemogie)
   #:use-module ((aetheria home base) #:select (%aetheria-desktop-home))
   #:export (aemogie))
 

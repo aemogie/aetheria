@@ -21,7 +21,7 @@
   #:use-module ((guix gexp) #:select (local-file))
   #:use-module ((aetheria) #:select (%project-root))
   #:use-module ((aetheria home base) #:select (%aetheria-base-home))
-  #:use-module ((aetheria home aemogie) #:select (aemogie))
+  #:use-module ((aetheria users aemogie) #:select (aemogie))
   #:export (%aetheria-base-system))
 
 (define (aetheria-guix prev)
@@ -42,6 +42,7 @@
 
 (define services
   (cons*
+   ;; move to per-system config
    (service guix-home-service-type `(("aemogie" ,aemogie)))
    (service guix-home-service-type `(("root" ,%aetheria-base-home)))
    (modify-services %desktop-services

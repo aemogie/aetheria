@@ -1,4 +1,4 @@
-(define-module (aetheria system serena)
+(define-module (aetheria hosts serena)
   #:use-module ((srfi srfi-1) #:select (find))
   #:use-module ((ice-9 match) #:select (match-lambda))
   #:use-module ((guix gexp) #:select (gexp program-file))
@@ -20,7 +20,7 @@
                                                   sof-firmware))
   #:use-module ((nongnu system linux-initrd) #:select (microcode-initrd))
   #:use-module ((aetheria system base) #:select (%aetheria-base-system))
-  #:use-module ((aetheria system serena file-systems) #:select (serena-file-systems))
+  #:use-module ((aetheria hosts serena file-systems) #:select (serena-file-systems))
   #:export (serena))
 
 (define old-emacs-script
