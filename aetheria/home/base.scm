@@ -7,7 +7,8 @@
   #:use-module ((gnu home) #:select (home-environment))
   #:use-module ((gnu home services) #:select (home-files-service-type
                                               home-xdg-configuration-files-service-type))
-  #:use-module ((gnu home services shepherd) #:select (home-shepherd-service-type))
+  #:use-module ((gnu home services shepherd) #:select (home-shepherd-service-type
+                                                       home-shepherd-configuration))
   #:use-module ((gnu home services shells) #:select (home-bash-service-type))
   #:use-module ((gnu home services desktop) #:select (home-dbus-service-type))
   #:use-module ((gnu home services sound) #:select (home-pipewire-service-type))
@@ -18,6 +19,15 @@
   #:use-module ((gnu packages vim) #:select (vim))
   #:use-module ((gnu packages emacs) #:select (emacs-pgtk-xwidgets))
   #:use-module ((guix gexp) #:select (plain-file))
+  #:use-module ((gnu packages xdisorg) #:select (wl-clipboard))
+  #:use-module ((gnu packages terminals) #:select (foot))
+  #:use-module ((gnu packages fonts) #:select (font-iosevka
+					       font-iosevka-comfy
+					       font-google-noto
+					       font-google-noto-emoji
+					       font-google-noto-sans-cjk
+					       font-google-noto-serif-cjk))
+  #:use-module ((rosenthal packages wm) #:select (hyprland))
   #:export (%aetheria-base-home-services
             %aetheria-base-home-packages
             %aetheria-base-home
@@ -28,8 +38,8 @@
 (define %aetheria-base-home-services
   (list
    (service home-bash-service-type)
-   ;; runs weirdly. C-c kills it for some reason?
-   (service home-shepherd-service-type)
+   ;; started from hyprland config which is being persisted locally for now
+   (service home-shepherd-service-type (home-shepherd-configuration (auto-start? #f)))
    (service home-files-service-type
             `((".guile" ,%default-dotguile)
               (".Xdefaults" ,%default-xdefaults)))
@@ -61,7 +71,11 @@
 
 (define %aetheria-desktop-home-packages
   (cons*
+   hyprland wl-clipboard foot
    emacs-pgtk-xwidgets ;; TODO: emacs module?
+   font-iosevka font-iosevka-comfy
+   ;; no tofu or something, i dont really know
+   font-google-noto font-google-noto-emoji font-google-noto-sans-cjk font-google-noto-serif-cjk
    %aetheria-base-home-packages))
 
 (define %aetheria-desktop-home

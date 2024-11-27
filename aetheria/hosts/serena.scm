@@ -28,20 +28,22 @@
    "nivea-emacs"
    #~(begin
        (unsetenv "EMACSLOADPATH")
-       (execl #$(string-append
-                 ;; nivea root mount-point
-                 ;; in the future hopefully would be tmpfs
-                 "/mnt/nivea"
-                 ;; would be a nivea-meta partition in the future
-                 "/nix/var/nix"
-                 ;; latest system profile symlink. needs nivea-store mounted to resolve
-                 "/profiles/system"
-                 ;; this would be "deployed" into runtime root
-                 ;; currently i could just forego most of the previous stuff
-                 ;; and just do `/mnt/nivea/etc/static/...` as it's not ephemeral
-                 "/etc/profiles/per-user/aemogie"
-                 ;; finally, emacs
-                 "/bin/emacs")))))
+       (apply execl
+              (cons #$(string-append
+                       ;; nivea root mount-point
+                       ;; in the future hopefully would be tmpfs
+                       "/mnt/nivea"
+                       ;; would be a nivea-meta partition in the future
+                       "/nix/var/nix"
+                       ;; latest system profile symlink. needs nivea-store mounted to resolve
+                       "/profiles/system"
+                       ;; this would be "deployed" into runtime root
+                       ;; currently i could just forego most of the previous stuff
+                       ;; and just do `/mnt/nivea/etc/static/...` as it's not ephemeral
+                       "/etc/profiles/per-user/aemogie"
+                       ;; finally, emacs
+                       "/bin/emacs")
+                    (program-arguments))))))
 
 ;; migrate as much as possible out of hsot config
 (define serena
