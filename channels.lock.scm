@@ -1,16 +1,19 @@
+;; DO NOT MODIFY!
+;; instead, make your changes to channels.scm, then run `make update-lockfile`
 (use-modules
   ((guix channels)
    #:select
    (channel
      make-channel-introduction
-     openpgp-fingerprint)))
+     openpgp-fingerprint
+     %default-guix-channel)))
 
 (list (channel
         (name 'nonguix)
         (url "https://gitlab.com/nonguix/nonguix")
         (branch "master")
         (commit
-          "d9f5fc57b3d971cdbafbffb62119142419d61d3f")
+          "8dbfc04639cf198bef92d6f7f90472564bdb5727")
         (introduction
           (make-channel-introduction
             "897c1a470da759236cc11798f4e0a5f7d4d59fbc"
@@ -32,7 +35,7 @@
         (url "https://git.savannah.gnu.org/git/guix.git")
         (branch "master")
         (commit
-          "47ab553178eb00d02ba9588ed1f7df44fb2f7c4c")
+          "e5140eebdfc04b90c046856d95b2ef50c12fee72")
         (introduction
           (make-channel-introduction
             "9edb3f66fd807b096b48283debdcddccfea34bad"

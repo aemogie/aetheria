@@ -35,6 +35,9 @@ define guile_helpers
 (define (write-channel-lock-header)
   (call-with-output-file "build/tmp/channels.lock.scm"
     (lambda (lockfile)
+      (display ";; DO NOT MODIFY!" lockfile) (newline lockfile)
+      (display ";; instead, make your changes to channels.scm, then run `make update-lockfile`"
+               lockfile) (newline lockfile)
       (define header (call-with-input-file "channels.scm" read))
       (pretty-print header lockfile)
       (newline lockfile))))
