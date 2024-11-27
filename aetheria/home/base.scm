@@ -1,6 +1,5 @@
 (define-module (aetheria home base)
   #:use-module ((guix gexp) #:select (gexp
-                                      plain-file
                                       scheme-file))
   #:use-module ((gnu services) #:select (service))
   #:use-module ((gnu system shadow) #:select (%default-dotguile
@@ -81,11 +80,7 @@ for a colorful Guile experience.\n\n"))))
 
    (service home-xdg-configuration-files-service-type
             `(("gdb/gdbinit" ,%default-gdbinit)
-              ("nano/nanorc" ,%default-nanorc)
-              ;; should i persist this?
-              ("guix/shell-authorized-directories"
-               ,(plain-file "shell-authorized-directories"
-                            "/projects/aetheria"))))))
+              ("nano/nanorc" ,%default-nanorc)))))
 
 (define %aetheria-base-home-packages
   ;; just tiny/essential cli stuff. shouldnt require any graphics, all things
