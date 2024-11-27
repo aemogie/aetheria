@@ -10,17 +10,11 @@
                                               %default-substitute-urls
                                               %default-authorized-guix-keys))
   #:use-module ((gnu services guix) #:select (guix-home-service-type))
-  #:use-module ((gnu system) #:select (%base-packages
-                                       operating-system))
-  #:use-module ((gnu system accounts) #:select (user-account))
-  #:use-module ((gnu system shadow) #:select (%base-user-accounts))
+  #:use-module ((gnu system) #:select (operating-system))
   #:use-module ((gnu system file-systems) #:select (%base-file-systems))
   #:use-module ((gnu packages package-management) #:select (guix-for-channels))
-  #:use-module ((gnu bootloader) #:select (bootloader-configuration))
-  #:use-module ((gnu bootloader grub) #:select (grub-efi-bootloader))
   #:use-module ((guix gexp) #:select (local-file))
   #:use-module ((aetheria) #:select (%project-root))
-  #:use-module ((aetheria home base) #:select (%aetheria-base-home))
   #:use-module ((aetheria users aemogie) #:select (aemogie))
   #:export (%aetheria-base-system))
 
@@ -31,6 +25,7 @@
    (inherit prev)
    (channels locked)
    ;; this isnt cached whatsoever
+   ;; updated note: inferiors may fix this. for now im using inferiors in my ~/.guile
    ;; (guix (guix-for-channels locked))
    (substitute-urls
     (cons* "https://substitutes.nonguix.org"
@@ -40,29 +35,14 @@
             (string-append %project-root "/substitutes/nonguix.pub"))
            %default-authorized-guix-keys))))
 
-(define services
-  (cons*
-   ;; move to per-system config
-   (service guix-home-service-type `(("aemogie" ,aemogie)))
-   (service guix-home-service-type `(("root" ,%aetheria-base-home)))
-   (modify-services %desktop-services
-     (delete gdm-service-type)
-     ;; TODO: figure out how to set system-wide channel in a non-annoying way
-     (guix-service-type prev => (aetheria-guix prev)))))
-
-(define accounts
-  (list (user-account
-         (name "aemogie")
-         (group "users")
-         (password (crypt "password" "$6$aetheria"))
-         (supplementary-groups '("wheel" "netdev" "audio" "video")))))
-
 (define %aetheria-base-system
   (operating-system
     (host-name "aetheria")
-    (bootloader (bootloader-configuration
-                 (bootloader grub-efi-bootloader)
-                 (targets '("/boot"))))
-    (users (append accounts %base-user-accounts))
-    (services services)
+    (locale "en_GB.utf8")
+    (services (cons*
+               (service guix-home-service-type)
+               (modify-services %desktop-services
+                 (delete gdm-service-type)
+                 ;; TODO: figure out how to set system-wide channel in a non-annoying way
+                 (guix-service-type prev => (aetheria-guix prev)))))
     (file-systems %base-file-systems)))
