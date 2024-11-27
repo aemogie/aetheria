@@ -84,9 +84,14 @@
        '("/etc/NetworkManager/system-connections" ;; TODO: figure out sops-guix
          ;; should be migrated to guix home's mounts when i get to it
          "/root/.cache/guix" ;; guix caches channel checkouts here
-         "/root/.mozilla/icecat" ;; use root for icecat, im not breaking my user home
-         "/home/aemogie/.cache/guix" ;; guix caches channel checkouts here
-         "/home/aemogie/.mozilla/icecat" ;; use root for icecat, im not breaking my user home
+         "/home/aemogie/.cache/guix"
+         "/home/aemogie/.config/guix"
+         "/home/aemogie/.mozilla/icecat"
+         ;; temporary configs i copied from nivea
+         "/home/aemogie/.config/hypr/hyprland.conf"
+         "/home/aemogie/.config/waybar/config"
+         "/home/aemogie/.config/waybar/style.css"
+         "/home/aemogie/.config/foot/foot.ini"
          "/projects")))
 
 (define serena-file-systems
