@@ -22,4 +22,7 @@
 	  "7677db76330121a901604dfbad19077893865f35"
 	  (openpgp-fingerprint
 	   "13E7 6CD6 E649 C28C 3385  4DF5 5E5A A665 6149 17F7"))))
-       %default-guix-channel)
+       (channel
+	(inherit %default-guix-channel)
+        ;; meson update breaks umockdev (umockdev <- upower <- ??? <- system config)
+        (commit "cd26d76fedb7ab13ad91bd5dcfce119892b8e62e")))

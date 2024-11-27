@@ -45,7 +45,8 @@ endef
 $(guile $(guile_helpers))
 build/tmp/channels.lock.scm: --build-dirs
 	$(guile (write-channel-lock-header))
-	guix time-machine -C channels.scm -- time-machine -C channels.scm -- \
+	guix time-machine -C channels.scm -- \
+	     time-machine -C channels.scm -- \
 	     describe -f channels >> build/tmp/channels.lock.scm || exit 1
 
 # doesnt depend on channels.scm as you might need to update lockfile without updating channels
