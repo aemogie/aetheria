@@ -7,21 +7,24 @@
 
 (define %project-root
   (if (current-filename) ;; #f in repl
-       (dirname (current-filename))
-       "/projects/aetheria"))
+      (dirname (current-filename))
+      "/projects/aetheria"))
+(define* (eval-as-type file type-name type-predicate?)
+  (define loaded (primitive-load-path file #f))
+  (unless loaded
+    (error (format #f "file '~a' doesn't exist, or couldn't be found" file)))
+  (unless (type-predicate? loaded)
+    (error (format #f "file '~a' doesn't produce a record of type ~a" file type-name)))
+  loaded)
 
-(define* (system-config #:optional (system (gethostname)))
-  (define system-file-name (string-append "aetheria/system/" system ".scm"))
-  (define os (primitive-load-path system-file-name)) ;; the default not-found error is good enough
-  (unless (operating-system? os)
-    (error "file ~a doesn't produce an <operating-system>" system-file-name))
-  os)
+(define* (system-config #:optional (host (gethostname)))
+  (eval-as-type (string-append "aetheria/hosts/" host ".scm")
+                "<operating-system>"
+                operating-system?))
 
-(define* (home-config #:optional (home (getlogin)))
-  (define home-file-name (string-append "aetheria/home/" home ".scm"))
-  (define he (primitive-load-path home-file-name)) ;; the default not-found error is good enough
-  (unless (home-environment? he)
-    (error "file ~a doesn't produce an <home-environment>" home-file-name))
-  he)
+(define* (home-config #:optional (user (getlogin)))
+  (eval-as-type (string-append "aetheria/users/" user ".scm")
+                "<home-environment>"
+                home-environment?))
 
 (system-config)

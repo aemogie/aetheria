@@ -1,4 +1,4 @@
-(define-module (aetheria system serena file-systems)
+(define-module (aetheria hosts serena file-systems)
   #:use-module ((gnu system file-systems) #:select (file-system-label
                                                     file-system
                                                     %base-file-systems))
