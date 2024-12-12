@@ -1,0 +1,110 @@
+this file probably won't stay up-to date along with the progress of the
+project. i primarily use this to take a look at what my options are what i
+could possibly do next. for a full list of todos, in addition to this file,
+also do a grep on the codebase for "TODO"s i might've left in the code.
+
++ feat :: things that change what would end up in a build of the guix
+  system. usually correlates to a commit that would be ~feature:~ or
+  ~refactor:~
++ code :: things that affect the codebase but not exactly the guix system
+  that is built itself. these are things like changes to buildscripts, ci
+  builds, formatting and more.
+
+* feat
+** TODO keyd/kmonad
+for now, try xkb's ctrl:nocaps
+
+** TODO figure out gpg
+
+** TODO emacs configuration
+*** TODO check out guile-emacs
+*** TODO init.el on home-files-service-type
+*** TODO migrate config to an elisp package
+this allows for packaging standalone pre-configured emacs. precisely what i'm
+using currently, but on nivea.
+
+** TODO reduce temporary non-declarative configuration
+currently a lot of stuff is either explictly copied in to ~/@persist~, or
+being pulled in implicitly from configurations residing in ~/nix/store/~
+(which is mounted from serena's nivea partition). the emacs configuration
+won't be migrated but be rewritten and thus is a sperate TODO.
+*** TODO hyprland/swayfx
+create a ~hyprland-configuration-service~, or migrate to swayfx and use the
+~sway-configuration-service~.
+*** TODO waybar/eww
+**** TODO migrate to guix's packaged waybar first
+**** TODO then migrate config (along with swayfx)
+**** TODO finally start hacking on ~eww~
+or maybe give up early and start writing my own gtk-based widget system in
+guile
+*** TODO swww (or other wallpaper daemon)
+
+** TODO migrate old serena partitions
+*** TODO NIXHOME -> serena-persist:/home/aemogie
+*** TODO NIXOS:/nix/store -> serena:/@nivea-store
+*** TODO NIXOS:/niv/var/nix -> serena:/@nivea-meta
+
+** TODO migrate from tmpfs to btrfs
+nix-impermenance recommends adding the following to ~boot.initrd.postDeviceCommands~. translate it to guix.
+#+BEGIN_SRC sh
+  mkdir /btrfs_tmp
+  mount /dev/root_vg/root /btrfs_tmp
+  if [[ -e /btrfs_tmp/root ]]; then
+      mkdir -p /btrfs_tmp/old_roots
+      timestamp=$(date --date="@$(stat -c %Y /btrfs_tmp/root)" "+%Y-%m-%-d_%H:%M:%S")
+      mv /btrfs_tmp/root "/btrfs_tmp/old_roots/$timestamp"
+  fi
+
+  delete_subvolume_recursively() {
+      IFS=$'\n'
+      for i in $(btrfs subvolume list -o "$1" | cut -f 9- -d ' '); do
+          delete_subvolume_recursively "/btrfs_tmp/$i"
+      done
+      btrfs subvolume delete "$1"
+  }
+
+  for i in $(find /btrfs_tmp/old_roots/ -maxdepth 1 -mtime +30); do
+      delete_subvolume_recursively "$i"
+  done
+
+  btrfs subvolume create /btrfs_tmp/root
+  umount /btrfs_tmp
+#+END_SRC
+
+** TODO introduce ~<aethetria-os>~ and ~<aetheria-home>~ abstraction
+have a configuration that then gets rendered down to a proper
+~<operating-system>~ or ~<home-environment>~ but is a less restrictive type
+that can be easily extended. (kinda builder pattern?)
+
+** TODO nix on guix
+and on serena, the nivea and aetheria would share the stores.
+
+** TODO package nodejs/electron apps
+easiest way would be a fixed-output derivation, but i'm unsure how guix
+handles those. alternatively i figure out the build-system mechanism and port
+the nix build.
+*** TODO webcord/vesktop
+source (expat): https://github.com/SpacingBat3/WebCord
+source (gpl-3.0): https://github.com/Vencord/Vesktop
+*** TODO youtube-music
+source (expat): https://github.com/th-ch/youtube-music
+
+** TODO figure out standalone pre-configured packages
+guix adds a bit of abstraction on top of the raw concept of a
+derivation. browse through the documentation and figure out an alternative to
+https://github.com/viperML/wrapper-manager
+*** TODO optional: we have flatpak at home
+wrap all that in a container as well. guix seems to have a lot of built-in
+tooling for this already
+
+
+* code
+** TODO add pre-commit hook
++ check for tabs, trailing whitespace, maybe format and more
+
+** TODO figure out automatic formatting?
+guix has a default `guix format` but it breaks on importing macros
+
+** TODO figure out a better way to avoid ~#:select~ spam
+i currently use it as it lets me easily see which imports are used and
+unused. any other alternative method would do just fine.
