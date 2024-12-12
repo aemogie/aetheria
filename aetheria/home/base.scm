@@ -24,11 +24,11 @@
   #:use-module ((gnu packages xdisorg) #:select (wl-clipboard))
   #:use-module ((gnu packages terminals) #:select (foot))
   #:use-module ((gnu packages fonts) #:select (font-iosevka
-					       font-iosevka-comfy
-					       font-google-noto
-					       font-google-noto-emoji
-					       font-google-noto-sans-cjk
-					       font-google-noto-serif-cjk))
+                                               font-iosevka-comfy
+                                               font-google-noto
+                                               font-google-noto-emoji
+                                               font-google-noto-sans-cjk
+                                               font-google-noto-serif-cjk))
   #:export (%aetheria-base-home-services
             %aetheria-base-home-packages
             %aetheria-base-home
