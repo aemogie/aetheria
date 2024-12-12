@@ -99,9 +99,9 @@
    serena-partitions
    serena-persist
    (list
-    (persist-bind nivea "/nix/store")  ;; TODO: move to btrfs pool TODO: think
-    ;; of how to make /@persist read-only while making the mounted versions
-    ;; read/write
+    (persist-bind nivea "/nix/store")  ;; TODO: move to btrfs pool
+    ;; TODO: think of how to make /@persist read-only while making the mounted
+    ;; versions read/write
     ;; (remount-read-only (file-system-mount-point persist-part)
     ;;                    #:after serena-persist)
     )
