@@ -51,7 +51,7 @@ build/tmp/channels.lock.scm: --build-dirs
 
 # doesnt depend on channels.scm as you might need to update lockfile without updating channels
 update-lockfile: build/tmp/channels.lock.scm
-	rm channels.lock.scm
+	rm -f channels.lock.scm
 	mv build/tmp/channels.lock.scm channels.lock.scm
 
 build/system: $(sources) channels.lock.scm --build-dirs

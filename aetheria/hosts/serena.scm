@@ -8,8 +8,6 @@
   #:use-module ((gnu system linux-initrd) #:select (%base-initrd-modules))
   #:use-module ((gnu system accounts) #:select (user-account))
   #:use-module ((gnu system shadow) #:select (%base-user-accounts))
-  #:use-module ((gnu bootloader) #:select (bootloader-configuration))
-  #:use-module ((gnu bootloader grub) #:select (grub-efi-bootloader))
   #:use-module ((gnu services) #:select (modify-services))
   #:use-module ((gnu services guix) #:select (guix-home-service-type))
   #:use-module ((gnu home) #:select (home-environment
@@ -80,9 +78,6 @@
     (firmware (list linux-firmware
                     sof-firmware))
     (file-systems serena-file-systems)
-    (bootloader (bootloader-configuration
-                 (bootloader grub-efi-bootloader)
-                 (targets '("/boot"))))
     (users (append (filter-map caddr serena-accounts)
                    %base-user-accounts))
     (packages
