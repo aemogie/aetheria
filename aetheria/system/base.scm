@@ -11,6 +11,8 @@
                                               %default-authorized-guix-keys))
   #:use-module ((gnu services guix) #:select (guix-home-service-type))
   #:use-module ((gnu system) #:select (operating-system))
+  #:use-module ((gnu bootloader) #:select (bootloader-configuration))
+  #:use-module ((gnu bootloader grub) #:select (grub-efi-bootloader))
   #:use-module ((gnu system file-systems) #:select (%base-file-systems))
   #:use-module ((gnu packages package-management) #:select (guix-for-channels))
   #:use-module ((guix gexp) #:select (local-file))
@@ -39,6 +41,11 @@
   (operating-system
     (host-name "aetheria")
     (locale "en_GB.utf8")
+    ;; TODO: look into moving to host-specific configuration. maybe introduce
+    ;; another abstraction which is then rendered to an <operating-system>?
+    (bootloader (bootloader-configuration
+                 (bootloader grub-efi-bootloader)
+                 (targets '("/boot"))))
     (services (cons*
                (service guix-home-service-type)
                (modify-services %desktop-services

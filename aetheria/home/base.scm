@@ -19,6 +19,7 @@
   #:use-module ((gnu packages version-control) #:select (git))
   #:use-module ((gnu packages text-editors) #:select (nano))
   #:use-module ((gnu packages vim) #:select (vim))
+  #:use-module ((gnu packages wm) #:select (hyprland))
   #:use-module ((gnu packages emacs) #:select (emacs-pgtk-xwidgets))
   #:use-module ((gnu packages xdisorg) #:select (wl-clipboard))
   #:use-module ((gnu packages terminals) #:select (foot))
@@ -28,7 +29,6 @@
 					       font-google-noto-emoji
 					       font-google-noto-sans-cjk
 					       font-google-noto-serif-cjk))
-  #:use-module ((rosenthal packages wm) #:select (hyprland))
   #:export (%aetheria-base-home-services
             %aetheria-base-home-packages
             %aetheria-base-home
