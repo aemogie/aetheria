@@ -92,6 +92,7 @@
          "/home/aemogie/.config/waybar/config"
          "/home/aemogie/.config/waybar/style.css"
          "/home/aemogie/.config/foot/foot.ini"
+         "/home/aemogie/.config/YouTube Music"
          "/projects")))
 
 (define serena-file-systems
