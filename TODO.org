@@ -108,3 +108,7 @@ guix has a default `guix format` but it breaks on importing macros
 ** TODO figure out a better way to avoid ~#:select~ spam
 i currently use it as it lets me easily see which imports are used and
 unused. any other alternative method would do just fine.
+
+** TODO migrate Makefile to guile
+not exactly useful but is funny to have even the buildscript in guile. mostly
+just playing with inferiors, so should be fun.
