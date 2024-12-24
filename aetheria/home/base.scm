@@ -20,7 +20,9 @@
   #:use-module ((gnu packages text-editors) #:select (nano))
   #:use-module ((gnu packages vim) #:select (vim))
   #:use-module ((gnu packages wm) #:select (hyprland
-                                            waybar))
+                                            waybar
+                                            cage))
+  #:use-module ((gnu packages gnuzilla) #:select (icecat))
   #:use-module ((gnu packages emacs) #:select (emacs-pgtk-xwidgets))
   #:use-module ((gnu packages xdisorg) #:select (wl-clipboard))
   #:use-module ((gnu packages terminals) #:select (foot))
@@ -81,8 +83,8 @@
 
 (define %aetheria-desktop-home-packages
   (cons*
-   hyprland waybar wl-clipboard foot
-   emacs-pgtk-xwidgets ;; TODO: emacs module?
+   hyprland waybar wl-clipboard cage
+   icecat foot emacs-pgtk-xwidgets ;; TODO: emacs module?
    font-iosevka font-iosevka-comfy
    ;; no tofu or something, i dont really know
    font-google-noto font-google-noto-emoji font-google-noto-sans-cjk font-google-noto-serif-cjk
