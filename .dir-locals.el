@@ -4,12 +4,7 @@
      (tab-width   .  8)
      (sentence-end-double-space . t)
 
-     (eval . (add-to-list 'completion-ignored-extensions ".go"))
-
-     ;; Geiser
-     ;; This allows automatically setting the `geiser-guile-load-path'
-     ;; variable when using various Guix checkouts (e.g., via git worktrees).
-     (geiser-repl-per-project-p . t)))
+     (eval . (add-to-list 'completion-ignored-extensions ".go"))))
  (scheme-mode
   .
   ((indent-tabs-mode . nil)
