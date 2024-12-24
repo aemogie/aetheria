@@ -19,7 +19,8 @@
   #:use-module ((gnu packages version-control) #:select (git))
   #:use-module ((gnu packages text-editors) #:select (nano))
   #:use-module ((gnu packages vim) #:select (vim))
-  #:use-module ((gnu packages wm) #:select (hyprland))
+  #:use-module ((gnu packages wm) #:select (hyprland
+                                            waybar))
   #:use-module ((gnu packages emacs) #:select (emacs-pgtk-xwidgets))
   #:use-module ((gnu packages xdisorg) #:select (wl-clipboard))
   #:use-module ((gnu packages terminals) #:select (foot))
@@ -80,7 +81,7 @@
 
 (define %aetheria-desktop-home-packages
   (cons*
-   hyprland wl-clipboard foot
+   hyprland waybar wl-clipboard foot
    emacs-pgtk-xwidgets ;; TODO: emacs module?
    font-iosevka font-iosevka-comfy
    ;; no tofu or something, i dont really know
