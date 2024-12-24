@@ -8,7 +8,8 @@
   #:use-module ((gnu system linux-initrd) #:select (%base-initrd-modules))
   #:use-module ((gnu system accounts) #:select (user-account))
   #:use-module ((gnu system shadow) #:select (%base-user-accounts))
-  #:use-module ((gnu services) #:select (modify-services))
+  #:use-module ((gnu services) #:select (service
+                                         modify-services))
   #:use-module ((gnu services guix) #:select (guix-home-service-type))
   #:use-module ((gnu home) #:select (home-environment
                                      home-environment?
@@ -21,8 +22,11 @@
                                                   sof-firmware))
   #:use-module ((nongnu system linux-initrd) #:select (microcode-initrd))
   #:use-module ((aetheria system base) #:select (%aetheria-base-system))
+  #:use-module ((aetheria services kmonad) #:select (kmonad-service-type
+                                                     kmonad-keyboard-service))
   #:use-module ((aetheria hosts serena file-systems) #:select (serena-file-systems))
   #:use-module ((aetheria home base) #:select (%aetheria-base-home))
+  #:use-module ((aetheria home services kmonad) #:select (home-kmonad-service-type))
   #:use-module ((aetheria users aemogie) #:select (aemogie))
   #:export (serena))
 
@@ -48,20 +52,36 @@
        (unsetenv "EMACSLOADPATH")
        (apply execl (cons #$path (program-arguments))))))
 
+;; todo: move to (aetheria users aemogie)
+(define kmonad-config
+  (kmonad-keyboard-service
+   (defcfg
+     #:name serena-builtin
+     #:target-type home-kmonad-service-type
+     #:input (device-file "/dev/input/by-path/platform-i8042-serio-0-event-kbd")
+     #:output (uinput-sink "KMonad Remapped Keyboard")
+     #:fallthrough #t)
+   (defsrc
+     caps)
+   (deflayer initial ;; kmonad defaults to the first deflayer
+     (tap-next esc lctl))))
+
 (define serena-accounts
   `(("aemogie"
      ,(home-environment
        (inherit aemogie)
-       (services (modify-services (home-environment-user-services aemogie)
-                   (home-files-service-type
-                    files =>
-                    (cons (list "emacs" (old-emacs-script))
-                          files)))))
+       (services (cons*
+                  kmonad-config
+                  (modify-services (home-environment-user-services aemogie)
+                    (home-files-service-type
+                     files =>
+                     (cons (list "emacs" (old-emacs-script))
+                           files))))))
      ,(user-account
        (name "aemogie")
        (group "users")
        (password (crypt "password" "$6$aetheria"))
-       (supplementary-groups '("wheel" "netdev" "audio" "video"))))
+       (supplementary-groups '("wheel" "netdev" "audio" "video" "input"))))
     ("root" ,%aetheria-base-home #f)))
 
 ;; maybe introduce a wrapper record that can then be rendered down to <operating-system>?
@@ -84,13 +104,15 @@
      (cons* cage icecat ;; good enough to begin
             %base-packages))
     (services
-     (modify-services (operating-system-user-services %aetheria-base-system)
-       (guix-home-service-type
-        config =>
-        (append (filter-map
-                 (match-lambda ((name (? home-environment? he) _) `(,name ,he)))
-                 serena-accounts)
-                config))))))
+     (cons*
+      (service kmonad-service-type) ;; for udev rules
+      (modify-services (operating-system-user-services %aetheria-base-system)
+        (guix-home-service-type
+         config =>
+         (append (filter-map
+                  (match-lambda ((name (? home-environment? he) _) `(,name ,he)))
+                  serena-accounts)
+                 config)))))))
 
 ;; consumed by (@ (aetheria) system-config)
 serena
