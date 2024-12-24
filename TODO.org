@@ -11,8 +11,18 @@ also do a grep on the codebase for "TODO"s i might've left in the code.
   builds, formatting and more.
 
 * feat
-** TODO keyd/kmonad
-for now, try xkb's ctrl:nocaps
+** TODO kmonad
+*** DONE make guix service
+*** TODO port old keyd config to kmonad
+the old keyd behaviour was as follows:
++ [X] capslock acts as ctrl when held and esc when tapped
++ [ ] enter acts as ctrl when held and enter (itself) when tapped
++ [ ] when ctrl is held, h/j/k/l and g/; should act as left/up/down/right and
+  home/end respectively.
++ [ ] everything else fallbacks to ctrl (maybe an empty layer with ~implicit-around~)
++ [ ] disable old keys to force muscle memory: arrow, home, end, esc, lctl.
+  rctl is left for using the overriden keys.
+originally try to do a 1:1 port, but maybe look into better worflows in the meanwhile
 
 ** TODO figure out gpg
 
@@ -22,6 +32,8 @@ for now, try xkb's ctrl:nocaps
 *** TODO migrate config to an elisp package
 this allows for packaging standalone pre-configured emacs. precisely what i'm
 using currently, but on nivea.
+*** TODO or make ~(use-package)~ a guix service extension
+would serialise the config into elisp
 
 ** TODO reduce temporary non-declarative configuration
 currently a lot of stuff is either explictly copied in to ~/@persist~, or
@@ -38,6 +50,15 @@ create a ~hyprland-configuration-service~, or migrate to swayfx and use the
 or maybe give up early and start writing my own gtk-based widget system in
 guile
 *** TODO swww (or other wallpaper daemon)
+
+** TODO serializers
++ [X] kmonad kbd
++ [ ] css
++ [ ] yuck
++ [ ] hyprland
++ [ ] swayfx
++ [ ] foot
++ [ ] elisp
 
 ** TODO migrate old serena partitions
 *** TODO NIXHOME -> serena-persist:/home/aemogie
@@ -71,10 +92,17 @@ nix-impermenance recommends adding the following to ~boot.initrd.postDeviceComma
   umount /btrfs_tmp
 #+END_SRC
 
-** TODO introduce ~<aethetria-os>~ and ~<aetheria-home>~ abstraction
+** +introduce ~<aethetria-os>~ and ~<aetheria-home>~ abstraction+
 have a configuration that then gets rendered down to a proper
 ~<operating-system>~ or ~<home-environment>~ but is a less restrictive type
 that can be easily extended. (kinda builder pattern?)
+update: that's a bad idea, probably. has very bad implications on
+maintainability.
+
+** TODO make ~(aetheria users ...)~ procedures that take in hostname
+and the files themselves could produce a consumable result by calling the
+procedure with ~(gethostname)~. as little as possible should be on
+system-level config.
 
 ** TODO nix on guix
 and on serena, the nivea and aetheria would share the stores.
