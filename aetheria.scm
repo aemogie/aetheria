@@ -13,7 +13,8 @@
 (define* (eval-as-type file type-name type-predicate?)
   ;; look into adding inferior as well? or maybe wait for migration of the makefile to guile
   (add-to-load-path %project-root)
-  (define loaded (primitive-load-path file #f))
+  (define loaded (save-module-excursion
+                  (lambda () (primitive-load-path file #f))))
   (unless loaded
     (error (format #f "file '~a' doesn't exist, or couldn't be found" file)))
   (unless (type-predicate? loaded)
