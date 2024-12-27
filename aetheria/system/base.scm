@@ -10,8 +10,13 @@
                                               guix-configuration
                                               guix-extension
                                               %default-authorized-guix-keys))
+  #:use-module ((gnu services shepherd) #:select (shepherd-root-service-type
+                                                  shepherd-configuration
+                                                  shepherd-configuration-shepherd))
   #:use-module ((gnu services guix) #:select (guix-home-service-type))
-  #:use-module ((gnu system) #:select (operating-system))
+  #:use-module ((gnu system) #:select (operating-system-default-essential-services
+                                       operating-system
+                                       this-operating-system))
   #:use-module ((gnu bootloader) #:select (bootloader-configuration))
   #:use-module ((gnu bootloader grub) #:select (grub-efi-bootloader))
   #:use-module ((gnu system file-systems) #:select (%base-file-systems))
@@ -22,6 +27,7 @@
   #:use-module ((aetheria) #:select (%project-root))
   #:use-module ((aetheria services kmonad) #:select (kmonad-service-type))
   #:use-module ((aetheria packages package-management) #:select (guix-for-cached-channels))
+  #:use-module ((aetheria packages admin) #:select (shepherd-with-propagated-fibers))
   #:use-module ((aetheria home base) #:select (%aetheria-base-home))
   #:export (%aetheria-base-system
             %aetheria-base-services
@@ -57,6 +63,15 @@
                (guix (guix-for-cached-channels (current-channels)))))
      (delete gdm-service-type))))
 
+(define (aetheria-base-essential-services os)
+  ;; kinda stupid, i could instead just add it to the default packages too
+  (modify-services (operating-system-default-essential-services os)
+    (shepherd-root-service-type
+     prev => (shepherd-configuration
+              (inherit prev)
+              (shepherd (shepherd-with-propagated-fibers
+                         (shepherd-configuration-shepherd prev)))))))
+
 (define %aetheria-base-system
   (operating-system
     (host-name "aetheria")
@@ -67,4 +82,6 @@
                  (bootloader grub-efi-bootloader)
                  (targets '("/boot"))))
     (services %aetheria-base-services)
+    (essential-services
+     (aetheria-base-essential-services this-operating-system))
     (file-systems %base-file-systems)))
