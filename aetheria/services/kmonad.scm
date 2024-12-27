@@ -1,7 +1,5 @@
 (define-module (aetheria services kmonad)
-  #:use-module ((srfi srfi-1) #:select (find
-                                        find-tail
-                                        take-while))
+  #:use-module ((srfi srfi-1) #:select (find))
   #:use-module ((ice-9 match) #:select (match-lambda))
   #:use-module ((guix records) #:select (define-record-type*))
   #:use-module ((srfi srfi-26) #:select (cut))
@@ -27,7 +25,10 @@
     ((and ('defcfg args ...)
           (? (cut find keyword? <>)))
      (serialize-kbd
-      (cons 'defcfg (map (lambda (arg) (if (keyword? arg) (keyword->symbol arg) arg)) args))))
+      (cons 'defcfg
+            (map (lambda (arg)
+                   (if (keyword? arg) (keyword->symbol arg) arg))
+                 args))))
 
     ;; actual serialization
     (#t "true")
@@ -44,11 +45,15 @@
     ((? symbol? sym) (symbol->string sym))
     ((? number? num) (number->string num))
 
-    ((? keyword? key) (string-append ":" (symbol->string (keyword->symbol key))))
-    ((? string? str) (string-append "\"" str "\""))
+    ((? keyword? key)
+     (string-append ":" (symbol->string (keyword->symbol key))))
+    ((? string? str)
+     (string-append "\"" str "\""))
 
-    (#(vec ...) (string-append "#(" (string-join (map serialize-kbd vec) " ") ")"))
-    ((lst ...) (string-append "(" (string-join (map serialize-kbd lst) " ") ")"))
+    (#(vec ...)
+     (string-append "#(" (string-join (map serialize-kbd vec) " ") ")"))
+    ((lst ...)
+     (string-append "(" (string-join (map serialize-kbd lst) " ") ")"))
 
     (invalid (throw 'kbd-serialization invalid))))
 
@@ -110,48 +115,99 @@
               (values (append (kmonad-configuration-values config)
                               extensions)))))))
 
-;; TODO: rewrite with match statments
-(define-syntax-rule (extract-keyword-argument-from-toplevel-function
-                     function-name keyword toplevel)
-  (let* ((function'
-          (find (lambda (elt) (eq? (car elt) function-name)) toplevel))
-         (function
-          (if function' function'
-              (throw 'bad-kmonad-configuration
-                     (format #f "ensure you configuration has a `~a` block" function-name))))
-         (tail' (find-tail (cut eq? keyword <>)
-                           (cdr function))) ;; arguments
-         (tail (if (and tail' (pair? tail') (pair? (cdr tail'))) tail'
-                   (throw 'bad-kmonad-configuration
-                          (format #f "ensure you `~a` block has an additional `~a` field!"
-                                  function-name keyword))))
-         (extracted (cadr tail))
-         (updated-function
-          (append (take-while (lambda (arg) (not (eq? keyword arg))) function)
-                  (cddr tail))) ;; arguments after the keyword and it's value.
-         (updated-toplevel
-          (map (lambda (elt)
-                 (if (eq? elt function) updated-function elt))
-               toplevel)))
-    (cons extracted updated-toplevel)))
+;; an llm could never write this bullshit... i hope...
+;; TODO: this is unmaintainable, rewrite in syntax-case
+(define-syntax process-config
+  ;; (stack ... (!method-name args))
+  ;; (!process-defcfg (name target-type) (remainder ...) (processed ...))
+  ;; (!process-outer (name target-type) (remainder ...) (processed ...))
+  ;; (!validate-arguments name target-type)
+  ;; (!make-service-type name target-type sexp)
+  ;; (!make-service <service-type> value)
+  (syntax-rules (!process-defcfg
+                 defcfg
+                 !process-outer
+                 !validate-arguments
+                 !make-service-type
+                 !make-service)
+    ((_ (stack ...
+               ;; ignore propagated name as we override it with the matched
+               ;; `name` here
+               (!process-defcfg (_ target-type) (#:name name rest ...) processed)))
+     (process-config
+      (stack ...
+             (!process-defcfg (name target-type) (rest ...) processed))))
+    
+    ((_ (stack ...
+               ;; ignore propagated target-type as we override it with the
+               ;; matched `target-type` here
+               (!process-defcfg (name _) (#:target-type target-type rest ...) processed)))
+     (process-config
+      (stack ...
+             (!process-defcfg (name target-type) (rest ...) processed))))
 
-(define-syntax-rule (kmonad-keyboard-service kbd-expr ...)
-  (let* ((toplevel `(kbd-expr ...))
-         (extracted-target (extract-keyword-argument-from-toplevel-function
-                            'defcfg '#:target-type toplevel))
-         (extracted-name (extract-keyword-argument-from-toplevel-function
-                          ;; feed previous extraction into this
-                          'defcfg '#:name (cdr extracted-target)))
-         (type (begin
-                 (service-type
-                  (name (symbol-append 'kmonad- (car extracted-name)))
-                  (extensions (list (service-extension
-                                     ;; `(car extracted-target)` is a raw
-                                     ;; symbol, because toplevel is quoted. we
-                                     ;; need to look it up.
-                                     (primitive-eval (car extracted-target))
-                                     identity)))
-                  (description (string-append "KMonad configuration for keyboard: "
-                                              (symbol->string (car extracted-name))))))))
-    (service type (cons (car extracted-name) ;; name
-                        (cdr extracted-name))))) ;; updated
+    ((_ (stack ...
+               (!process-defcfg propagated (this rest ...) (processed ...))))
+     (process-config
+      (stack ...
+             (!process-defcfg propagated (rest ...) (processed ... this)))))
+    
+    ((_ (stack ...
+               (!process-outer _ rest (processed ...))
+               (!process-defcfg propagated () (args ...))))
+     ;; we exit out of !process-defcfg mode, and put the defcfg block into
+     ;; the `processed`
+     (process-config
+      (stack ...
+             (!process-outer propagated rest (processed ... (defcfg args ...))))))
+    
+    ((_ (stack ...
+               (!process-defcfg propagated () (args ...))))
+     (syntax-error "can only return from !process-defcfg to !process-outer" (stack ...)))
+
+    
+    ((_ (stack
+         ...
+         (!process-outer propagated ((defcfg args ...) rest ...) processed)))
+     (process-config
+      (stack ...
+             (!process-outer propagated (rest ...) processed)
+             (!process-defcfg propagated (args ...) ()))))
+    
+    ((_ (stack ...
+               (!process-outer propagated (this rest ...) (processed ...))))
+     (process-config
+      (stack ...
+             (!process-outer propagated (rest ...) (processed ... this)))))
+    
+    ((_ (stack ...
+               (!process-outer (name target-type) () processed)))
+     (process-config
+      (stack ...
+             (!make-service-type name target-type processed)
+             (!validate-arguments name target-type))))
+
+    ((_ (stack ... (!validate-arguments #f _)))
+     (syntax-error "missing `#:name` field in your `defcfg` block"))
+    
+    ((_ (stack ... (!validate-arguments _ #f)))
+     (syntax-error "missing `#:target-type` field in your `defcfg` block"))
+    
+    ((_ (stack ... (!validate-arguments x y)))
+     (process-config (stack ...)))
+    
+    ((_ (stack ... (!make-service-type name* target-type sexp)))
+     (process-config
+      (stack ...
+             (!make-service
+              (service-type
+               (name (symbol-append 'kmonad- 'name*))
+               (extensions (list (service-extension target-type identity)))
+               (description (string-append "KMonad configuration for keyboard: "
+                                           (symbol->string 'name*))))
+              (cons 'name* 'sexp)))))
+    ((_ (stack ... (!make-service type value)))
+     (service type value))))
+
+(define-syntax-rule (kmonad-keyboard-service expr ...)
+  (process-config ((!process-outer (#f #f) (expr ...) ()))))
