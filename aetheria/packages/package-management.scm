@@ -7,7 +7,7 @@
   #:use-module ((guix profiles) #:select (profile-manifest
                                           profile-derivation))
   #:use-module ((guix inferior) #:select (cached-channel-instance))
-  #:use-module ((gnu packages package-management) #:select (guix-for-channels))
+  #:use-module ((gnu packages package-management) #:select (guix))
   #:use-module ((guix channels) #:select (%channel-profile-hooks))
   #:use-module ((guix packages) #:select (package))
   #:export (guix-for-cached-channels))
@@ -20,7 +20,7 @@
                           #:hooks %channel-profile-hooks
                           #:format-version 3)))
   (package
-    (inherit (guix-for-channels channels))
+    (inherit guix)
     (source drv)
     (build-system raw-build-system)
     (arguments '())))
