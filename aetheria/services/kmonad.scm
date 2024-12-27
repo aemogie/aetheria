@@ -110,6 +110,7 @@
               (values (append (kmonad-configuration-values config)
                               extensions)))))))
 
+;; TODO: rewrite with match statments
 (define-syntax-rule (extract-keyword-argument-from-toplevel-function
                      function-name keyword toplevel)
   (let* ((function'
