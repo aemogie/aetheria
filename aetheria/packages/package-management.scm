@@ -1,6 +1,6 @@
 ;; my additions to (gnu packages package-management)
 (define-module (aetheria packages package-management)
-  #:use-module ((aetheria build-system raw) #:select (raw-build-system))
+  #:use-module ((aetheria build-system file-like) #:select (raw-build-system))
   #:use-module ((guix monads) #:select (mlet))
   #:use-module ((guix store) #:select (%store-monad
                                        store-lift))
