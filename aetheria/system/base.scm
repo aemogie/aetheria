@@ -9,7 +9,6 @@
   #:use-module ((gnu services base) #:select (guix-service-type
                                               guix-configuration
                                               guix-extension
-                                              %default-substitute-urls
                                               %default-authorized-guix-keys))
   #:use-module ((gnu services guix) #:select (guix-home-service-type))
   #:use-module ((gnu system) #:select (operating-system))
@@ -17,25 +16,16 @@
   #:use-module ((gnu bootloader grub) #:select (grub-efi-bootloader))
   #:use-module ((gnu system file-systems) #:select (%base-file-systems))
   #:use-module ((gnu system accounts) #:select (user-account))
-  #:use-module ((gnu packages package-management) #:select (guix-for-channels))
   #:use-module ((guix gexp) #:select (local-file))
+  #:use-module ((guix store) #:select (%default-substitute-urls))
+  #:use-module ((guix describe) #:select (current-channels))
   #:use-module ((aetheria) #:select (%project-root))
   #:use-module ((aetheria services kmonad) #:select (kmonad-service-type))
+  #:use-module ((aetheria packages package-management) #:select (guix-for-cached-channels))
   #:use-module ((aetheria home base) #:select (%aetheria-base-home))
   #:export (%aetheria-base-system
             %aetheria-base-services
             %aetheria-user-template))
-
-;; this isnt cached whatsoever
-;; updated note: inferiors may fix this. for now im using inferiors in my ~/.guile
-;; doubly updated note: inferiors live in user's home directory
-(define (aetheria-guix prev)
-  ;; TOOD: can i make these be modules?
-  (define locked (primitive-load-path "channels.lock.scm"))
-  (guix-configuration
-   (inherit prev)
-   (channels locked)
-   (guix (guix-for-channels locked))))
 
 (define nonguix-substitute-service
   (simple-service
@@ -59,8 +49,12 @@
    nonguix-substitute-service
    (service kmonad-service-type) ;; for udev rules
    (modify-services %desktop-services
-     ;; TODO: figure out how to set system-wide channel in a non-annoying way
-     ;; (guix-service-type prev => (aetheria-guix prev))
+     ;; use the build-time (current-channels) for the system as well
+     (guix-service-type
+      prev => (guix-configuration
+               (inherit prev)
+               (channels (current-channels))
+               (guix (guix-for-cached-channels (current-channels)))))
      (delete gdm-service-type))))
 
 (define %aetheria-base-system

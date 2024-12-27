@@ -39,25 +39,13 @@
             %aetheria-desktop-home-packages
             %aetheria-desktop-home))
 
-(define dotguile-gexp
-  #~(;; do we just pray these exist?
-     (use-modules ((guix inferior) #:select (cached-channel-instance))
-                  ((guix store) #:select (with-store)))
-
-     (define channel-list (@@(guix scripts time-machine) channel-list))
-     (define cached-inferior
-       (with-store store (cached-channel-instance store (channel-list '()))))
-     (define inferior-guile-path
-       (string-append cached-inferior "/share/guile/site/3.0"))
-     (add-to-load-path inferior-guile-path)))
-
 (define %aetheria-base-home-services
   (list
    (service home-bash-service-type)
    ;; started from hyprland config which is being persisted locally for now
    (service home-shepherd-service-type (home-shepherd-configuration (auto-start? #f)))
    (service home-files-service-type
-            `((".guile" ,(scheme-file "dotguile" dotguile-gexp #:splice? #t))
+            `((".guile" ,%default-dotguile)
               (".Xdefaults" ,%default-xdefaults)))
 
    (service home-xdg-configuration-files-service-type
