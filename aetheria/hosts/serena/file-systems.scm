@@ -82,6 +82,7 @@
   (map (lambda (p) (persist-bind persist-part p))
        ;; TODO: these arent unique to serena
        '("/etc/NetworkManager/system-connections" ;; TODO: figure out sops-guix
+         "/var/lib/bluetooth" ;; dont think this is dangerous info tho, maybe generate?
          ;; should be migrated to guix home's mounts when i get to it
          "/root/.cache/guix" ;; guix caches channel checkouts here
          "/home/aemogie/.cache/guix"
