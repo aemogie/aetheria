@@ -4,7 +4,9 @@
   #:use-module ((gnu services) #:select (service
                                          modify-services
                                          simple-service))
-  #:use-module ((gnu services desktop) #:select (%desktop-services))
+  #:use-module ((gnu services desktop) #:select (%desktop-services
+                                                 bluetooth-service-type
+                                                 bluetooth-configuration))
   #:use-module ((gnu services xorg) #:select (gdm-service-type))
   #:use-module ((gnu services base) #:select (guix-service-type
                                               guix-configuration
@@ -54,6 +56,8 @@
    (service guix-home-service-type (list (list "root" %aetheria-base-home)))
    nonguix-substitute-service
    (service kmonad-service-type) ;; for udev rules
+   (service bluetooth-service-type
+            (bluetooth-configuration (auto-enable? #t)))
    (modify-services %desktop-services
      ;; use the build-time (current-channels) for the system as well
      (guix-service-type

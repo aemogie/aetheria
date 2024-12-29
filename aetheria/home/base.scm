@@ -22,6 +22,7 @@
   #:use-module ((gnu packages wm) #:select (hyprland
                                             waybar
                                             cage))
+  #:use-module ((gnu packages linux) #:select (bluez))
   #:use-module ((gnu packages gnuzilla) #:select (icecat))
   #:use-module ((gnu packages emacs) #:select (emacs-pgtk-xwidgets))
   #:use-module ((gnu packages xdisorg) #:select (wl-clipboard))
@@ -71,7 +72,7 @@
 
 (define %aetheria-desktop-home-packages
   (cons*
-   hyprland waybar wl-clipboard cage
+   hyprland waybar wl-clipboard cage bluez
    icecat foot emacs-pgtk-xwidgets ;; TODO: emacs module?
    font-iosevka font-iosevka-comfy
    ;; no tofu or something, i dont really know
