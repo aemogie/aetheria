@@ -84,4 +84,5 @@
     (services %aetheria-base-services)
     (essential-services
      (aetheria-base-essential-services this-operating-system))
-    (file-systems %base-file-systems)))
+    (file-systems %base-file-systems)
+    (skeletons '())))
