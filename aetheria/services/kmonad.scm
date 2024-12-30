@@ -21,15 +21,6 @@
 ;; TODO: move to serializers module, and expose?
 (define serialize-kbd
   (match-lambda
-    ;; processing before serializing. syntax transformations?
-    ((and ('defcfg args ...)
-          (? (cut find keyword? <>)))
-     (serialize-kbd
-      (cons 'defcfg
-            (map (lambda (arg)
-                   (if (keyword? arg) (keyword->symbol arg) arg))
-                 args))))
-
     ;; actual serialization
     (#t "true")
     (#f "false")
@@ -115,99 +106,182 @@
               (values (append (kmonad-configuration-values config)
                               extensions)))))))
 
-;; an llm could never write this bullshit... i hope...
-;; TODO: this is unmaintainable, rewrite in syntax-case
-(define-syntax process-config
-  ;; (stack ... (!method-name args))
-  ;; (!process-defcfg (name target-type) (remainder ...) (processed ...))
-  ;; (!process-outer (name target-type) (remainder ...) (processed ...))
-  ;; (!validate-arguments name target-type)
-  ;; (!make-service-type name target-type sexp)
-  ;; (!make-service <service-type> value)
-  (syntax-rules (!process-defcfg
-                 defcfg
-                 !process-outer
-                 !validate-arguments
-                 !make-service-type
-                 !make-service)
-    ((_ (stack ...
-               ;; ignore propagated name as we override it with the matched
-               ;; `name` here
-               (!process-defcfg (_ target-type) (#:name name rest ...) processed)))
-     (process-config
-      (stack ...
-             (!process-defcfg (name target-type) (rest ...) processed))))
-    
-    ((_ (stack ...
-               ;; ignore propagated target-type as we override it with the
-               ;; matched `target-type` here
-               (!process-defcfg (name _) (#:target-type target-type rest ...) processed)))
-     (process-config
-      (stack ...
-             (!process-defcfg (name target-type) (rest ...) processed))))
+(define-syntax kmonad-keyboard-service
+  (lambda (expr)
+    (define (validate-block whom block)
+      (unless (and (pair? block)
+                   (list? block))
+        (error 'hi block (pair? block) (list? block))
+        (syntax-violation whom "expression not a valid statement" block))
 
-    ((_ (stack ...
-               (!process-defcfg propagated (this rest ...) (processed ...))))
-     (process-config
-      (stack ...
-             (!process-defcfg propagated (rest ...) (processed ... this)))))
-    
-    ((_ (stack ...
-               (!process-outer _ rest (processed ...))
-               (!process-defcfg propagated () (args ...))))
-     ;; we exit out of !process-defcfg mode, and put the defcfg block into
-     ;; the `processed`
-     (process-config
-      (stack ...
-             (!process-outer propagated rest (processed ... (defcfg args ...))))))
-    
-    ((_ (stack ...
-               (!process-defcfg propagated () (args ...))))
-     (syntax-error "can only return from !process-defcfg to !process-outer" (stack ...)))
+      (define (go rest)
+        (syntax-case rest ()
+          ;; if a keyword is immediately followed by another keyword,
+          ;; with no argument between
+          ((kw1 kw2 rest ...) (and (keyword? (syntax->datum #'kw1))
+                                   (keyword? (syntax->datum #'kw2)))
+           (let* ((kw-name (symbol->string (keyword->symbol (syntax->datum #'kw1))))
+                  (msg (string-append "keyword `#:" kw-name "' needs an argument")))
+             (syntax-violation whom msg block)))
+          ;; if a keyword is the last element in the list
+          ((kw) (keyword? (syntax->datum #'kw))
+           (let* ((kw-name (symbol->string (keyword->symbol (syntax->datum #'kw))))
+                  (msg (string-append "keyword `#:" kw-name "' ends abruptly")))
+             (syntax-violation whom msg block)))
+          ;; shift the window
+          ((this rest ...) (go #'(rest ...)))
+          ;; void return
+          (() *unspecified*)))
+      (go (cdr block)))
 
-    
-    ((_ (stack
-         ...
-         (!process-outer propagated ((defcfg args ...) rest ...) processed)))
-     (process-config
-      (stack ...
-             (!process-outer propagated (rest ...) processed)
-             (!process-defcfg propagated (args ...) ()))))
-    
-    ((_ (stack ...
-               (!process-outer propagated (this rest ...) (processed ...))))
-     (process-config
-      (stack ...
-             (!process-outer propagated (rest ...) (processed ... this)))))
-    
-    ((_ (stack ...
-               (!process-outer (name target-type) () processed)))
-     (process-config
-      (stack ...
-             (!make-service-type name target-type processed)
-             (!validate-arguments name target-type))))
+    (define (process-defcfg whom block)
+      (validate-block whom block)
+      (define (go rest processed name target-type)
+        (syntax-case rest ()
+          ;; TODO: type check later at eval time. for now we just take the
+          ;; entire <syntax> object, to drag along the lexical scope
+          ((#:name name rest ...)
+           (go #'(rest ...) processed #'name target-type))
+          ((#:target-type target-type rest ...)
+           (go #'(rest ...) processed name #'target-type))
 
-    ((_ (stack ... (!validate-arguments #f _)))
-     (syntax-error "missing `#:name` field in your `defcfg` block"))
-    
-    ((_ (stack ... (!validate-arguments _ #f)))
-     (syntax-error "missing `#:target-type` field in your `defcfg` block"))
-    
-    ((_ (stack ... (!validate-arguments x y)))
-     (process-config (stack ...)))
-    
-    ((_ (stack ... (!make-service-type name* target-type sexp)))
-     (process-config
-      (stack ...
-             (!make-service
-              (service-type
-               (name (symbol-append 'kmonad- 'name*))
-               (extensions (list (service-extension target-type identity)))
+          ;; defcfg block uses symbols for what should be
+          ;; keywords. let the users use keywords in the dsl, but
+          ;; translate it here
+          ((kw rest ...) (keyword? (syntax->datum #'kw))
+           (let* ((deconstructed (syntax->datum #'kw))
+                  (modified (keyword->symbol deconstructed))
+                  (reconstructed (datum->syntax #'kw modified #:source #'kw)))
+             (go #'(rest ...) (cons reconstructed processed) name target-type)))
+
+          ;; shift window
+          ((this rest ...)
+           (go #'(rest ...) (cons #'this processed) name target-type))
+
+          ;; got to the end but couldn't find required fields
+          (() (not name)
+           (syntax-violation whom "missing `#:name' in `defcfg' statement" block))
+          (() (not target-type)
+           (syntax-violation whom "missing `#:target-type' in `defcfg' statement" block))
+
+          ;; done. now reverse because `cons` prepends, while the
+          ;; pattern matcher consumes from the front
+          (() (values (reverse processed) name target-type))))
+
+      ;; starts as
+      ;; (defcfg args ...) -> (rest (args ...)) (processed (defcfg))
+      (go (cdr block) #'(defcfg) #f #f))
+
+    (define (process-defsrc whom block)
+      (validate-block whom block)
+      (define (go args name keys)
+        (syntax-case args ()
+          ;; keyboards can be named, which can then in turn be referenced by
+          ;; `(genlayer #:source ...)'
+          ((#:name name rest ...)
+           (go #'(rest ...) #'name keys))
+          ((keyword value rest ...) (keyword? (syntax->datum #'keyword))
+           (go #'(rest ...) name keys))
+          ((key rest ...)
+           (go #'(rest ...) name (cons #'key keys)))
+          (() (cons name (reverse keys)))))
+      (go (cdr block) #f #'()))
+
+    (define (process-genlayer whom block)
+      (validate-block whom block)
+      (syntax-case (cdr block) ()
+        ((name #:source source mapper) #'(name source mapper))
+        ((name mapper #:source source) #'(name source mapper))
+        ((name mapper) #'(name #f mapper))
+        ((_)
+         (syntax-violation whom "missing either `name' or `mapper' in `genlayer' block" block))
+        ((_ ...)
+         (syntax-violation whom "extraneous arguments in `genlayer' block" block))
+        (()
+         (syntax-violation whom "missing `name' and `mapper' in `genlayer' block" block))))
+
+    (define (process-config whom expr)
+      (define (go rest processed name target-type sources genlayers)
+        (syntax-case rest (defcfg defsrc genlayer deflayer)
+          (((defcfg args ...) rest ...) (and (not name)
+                                             (not target-type))
+           (call-with-values
+               (lambda () (process-defcfg whom #'(defcfg args ...)))
+             (lambda (defcfg-block name target-type)
+               (go #'(rest ...) (cons defcfg-block processed)
+                   name target-type sources genlayers))))
+          (((defcfg args ...) rest ...)
+           (syntax-violation whom "multiple `defcfg' blocks not allowed"
+                             #'(defcfg args ...)))
+
+          ;; accumulate sources for genlayer
+          (((defsrc args ...) rest ...)
+           (let ((src (process-defsrc whom #'(defsrc args ...))))
+             (go #'(rest ...) (cons #'(defsrc args ...) processed)
+                 name target-type (cons src sources) genlayers)))
+
+          (((genlayer args ...) rest ...)
+           (let ((gen (process-genlayer whom #'(genlayer args ...))))
+             (go #'(rest ...) processed
+                 name target-type sources (cons gen genlayers))))
+
+          ;; validate-block already throws syntax-violations where appropriate
+          (((other args ...) rest ...) (validate-block whom #'(other args ...))
+           (go #'(rest ...) (cons #'(other args ...) processed)
+               name target-type sources genlayers))
+
+          (()
+           (values (reverse processed)
+                   name target-type sources genlayers))))
+      (go expr '() #f #f '() '()))
+
+    (define (make-genlayers whom sources genlayers)
+      (define (make-layer genlayer)
+        (syntax-case genlayer ()
+          ((name source mapper)
+           #`(let ((found (assq source sources)))
+               (if found `(deflayer name ,@(if source '(#:source source) '())
+                            ,@(#'mapper (cdr found)))
+                   ;; syntax-violation at eval-time omg
+                   (syntax-violation
+                    '#,whom
+                    (string-append "`genlayer' statement expects "
+                                   "a `defsrc' statement with the name `"
+                                   (symbol->string source) "'")
+                    source))))
+          (unreachable (syntax-violation
+                        (syntax->datum whom)
+                        "misconstructed internal `genlayer' data structure"
+                        #'unreachable))))
+      #`(let ((sources '#,sources)) ;; bind at eval-time
+          (list #,@(map make-layer genlayers))))
+
+    (define (make-service-type whom name target-type)
+      #`(let ((name `#,name) ;; bind at eval-time
+              (target-type #,target-type))
+          ;; idk a nice way to use/import these values other than this
+          (if ((@(gnu services) service-type?) target-type)
+              ((@(gnu services) service-type)
+               (name (symbol-append 'kmonad- name))
+               (extensions (list ((@(gnu services) service-extension) target-type identity)))
                (description (string-append "KMonad configuration for keyboard: "
-                                           (symbol->string 'name*))))
-              (cons 'name* 'sexp)))))
-    ((_ (stack ... (!make-service type value)))
-     (service type value))))
+                                           (symbol->string name))))
+              ;; i did it again omg
+              (syntax-violation '#,whom "not a <service-type>" #'#,target-type))))
 
-(define-syntax-rule (kmonad-keyboard-service expr ...)
-  (process-config ((!process-outer (#f #f) (expr ...) ()))))
+    (syntax-case expr ()
+      ((whom expr ...)
+       (call-with-values (lambda () (process-config (syntax->datum #'whom) #'(expr ...)))
+         (lambda (config name target-type sources genlayers)
+           ;; we already throw errors if we do encounter a `defcfg'
+           ;; statement. this is in case its still undefined
+           (unless (and name target-type)
+             (syntax-violation (syntax->datum #'whom) "missing `defcfg' statement" #'(expr ...)))
+           (define full-config
+             (if (null? genlayers)
+                 #`(quasiquote #,config)
+                 #`(append (quasiquote #,config)
+                           #,(make-genlayers #'whom sources genlayers))))
+           (define service-type (make-service-type #'whom name target-type))
+           #`((@(gnu services) service) #,service-type (cons '#,name #,full-config)))))
+      ((whom) (syntax-violation (syntax->datum #'whom) "missing arguments" expr)))))
