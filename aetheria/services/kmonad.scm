@@ -10,6 +10,7 @@
   #:use-module ((gnu packages haskell-apps) #:select (kmonad))
   #:use-module ((gnu services) #:select (service
                                          service-type
+                                         service-type?
                                          service-extension
                                          for-home?))
   #:use-module ((gnu services shepherd) #:select (shepherd-root-service-type
@@ -185,7 +186,7 @@
           ((key rest ...)
            (go #'(rest ...) name (cons #'key keys)))
           (() (cons name (reverse keys)))))
-      (go (cdr block) #f #'()))
+      (go (cdr block) #'#f #'()))
 
     (define (process-genlayer whom block)
       (validate-block whom block)
@@ -241,27 +242,30 @@
           ((name source mapper)
            #`(let ((found (assq source sources)))
                (if found `(deflayer name ,@(if source '(#:source source) '())
-                            ,@(#'mapper (cdr found)))
+                            ,@(map mapper (cdr found)))
                    ;; syntax-violation at eval-time omg
                    (syntax-violation
                     '#,whom
-                    (string-append "`genlayer' statement expects "
-                                   "a `defsrc' statement with the name `"
-                                   (symbol->string source) "'")
+                    (if source
+                        (string-append "`genlayer' statement expects "
+                                       "a `defsrc' statement with the name `"
+                                       (symbol->string source) "'")
+                        (string-append "`genlayer' statement expects "
+                                       "an unnamed `defsrc' statement"))
                     source))))
-          (unreachable (syntax-violation
+          (invalid (syntax-violation
                         (syntax->datum whom)
                         "misconstructed internal `genlayer' data structure"
-                        #'unreachable))))
-      #`(let ((sources '#,sources)) ;; bind at eval-time
+                        #'invalid))))
+      #`(let ((sources `#,sources)) ;; bind at eval-time
           (list #,@(map make-layer genlayers))))
 
     (define (make-service-type whom name target-type)
       #`(let ((name `#,name) ;; bind at eval-time
               (target-type #,target-type))
           ;; idk a nice way to use/import these values other than this
-          (if ((@(gnu services) service-type?) target-type)
-              ((@(gnu services) service-type)
+          (if (service-type? target-type)
+              (service-type
                (name (symbol-append 'kmonad- name))
                (extensions (list ((@(gnu services) service-extension) target-type identity)))
                (description (string-append "KMonad configuration for keyboard: "
@@ -283,5 +287,5 @@
                  #`(append (quasiquote #,config)
                            #,(make-genlayers #'whom sources genlayers))))
            (define service-type (make-service-type #'whom name target-type))
-           #`((@(gnu services) service) #,service-type (cons '#,name #,full-config)))))
+           #`(service #,service-type (cons '#,name #,full-config)))))
       ((whom) (syntax-violation (syntax->datum #'whom) "missing arguments" expr)))))

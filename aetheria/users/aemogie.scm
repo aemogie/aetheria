@@ -1,5 +1,6 @@
 (define-module (aetheria users aemogie)
-  #:use-module ((ice-9 match) #:select (match))
+  #:use-module ((ice-9 match) #:select (match-lambda
+                                         match))
   #:use-module ((guix gexp) #:select (gexp
                                       program-file))
   #:use-module ((guix packages) #:select (package))
@@ -60,8 +61,10 @@
      #:fallthrough #t)
    (defsrc
      caps)
-   (deflayer initial ;; kmonad defaults to the first deflayer
-     (tap-next esc lctl))))
+   (genlayer initial ;; kmonad defaults to the first deflayer
+     (match-lambda
+       ('caps '(tap-next esc lctl))
+       (else else)))))
 
 (define* (make-aemogie-home hostname)
   (home-environment
