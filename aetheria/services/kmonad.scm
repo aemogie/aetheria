@@ -1,8 +1,6 @@
 (define-module (aetheria services kmonad)
-  #:use-module ((srfi srfi-1) #:select (find))
   #:use-module ((ice-9 match) #:select (match-lambda))
   #:use-module ((guix records) #:select (define-record-type*))
-  #:use-module ((srfi srfi-26) #:select (cut))
   #:use-module ((guix gexp) #:select (gexp
                                       file-append
                                       plain-file
@@ -112,7 +110,6 @@
     (define (validate-block whom block)
       (unless (and (pair? block)
                    (list? block))
-        (error 'hi block (pair? block) (list? block))
         (syntax-violation whom "expression not a valid statement" block))
 
       (define (go rest)
@@ -161,9 +158,9 @@
 
           ;; got to the end but couldn't find required fields
           (() (not name)
-           (syntax-violation whom "missing `#:name' in `defcfg' statement" block))
+           (syntax-violation whom "missing `#:name` in `defcfg` statement" block))
           (() (not target-type)
-           (syntax-violation whom "missing `#:target-type' in `defcfg' statement" block))
+           (syntax-violation whom "missing `#:target-type` in `defcfg` statement" block))
 
           ;; done. now reverse because `cons` prepends, while the
           ;; pattern matcher consumes from the front
@@ -190,102 +187,150 @@
 
     (define (process-genlayer whom block)
       (validate-block whom block)
-      (syntax-case (cdr block) ()
-        ((name #:source source mapper) #'(name source mapper))
-        ((name mapper #:source source) #'(name source mapper))
-        ((name mapper) #'(name #f mapper))
-        ((_)
-         (syntax-violation whom "missing either `name' or `mapper' in `genlayer' block" block))
-        ((_ ...)
-         (syntax-violation whom "extraneous arguments in `genlayer' block" block))
-        (()
-         (syntax-violation whom "missing `name' and `mapper' in `genlayer' block" block))))
+      (define (go rest name source mapper keywords)
+        (syntax-case rest ()
+          ((#:source source* rest ...) (not source)
+           (go #'(rest ...) name #'source* mapper keywords))
+          ((keyword value rest ...) (keyword? (syntax->datum #'keyword))
+           (go #'(rest ...) name source mapper (cons* #'keyword #'value keywords)))
+          ;; the first non-keyword value argument
+          ((name* rest ...) (and (not name) (not mapper))
+           (go #'(rest ...) #'name* source mapper keywords))
+          ;; if name is defined, i.e. second positional argument
+          ((mapper* rest ...) (and name (not mapper))
+           (go #'(rest ...) name source #'mapper* keywords))
+          ;; when both are defined
+          ((this rest ...) (and name mapper)
+           (syntax-violation whom "extraneous arguments in `genlayer` block" #'this))
+          (() (not name)
+           (syntax-violation whom "missing positional argument `name` in `genlayer` block"
+                             block))
+          (() (not mapper)
+           (syntax-violation whom "missing positional argument `mapper` in `genlayer` block"
+                             block))
+          ;; `sources` are accumulated and bound at eval-time towards the end
+          ;; of this macro. hygienic renaming only happens with
+          ;; `define-syntax` and as long as all these expressions build upto a
+          ;; single `define-syntax`, this won't complain about missing symbols
+          ;; or hygiene
+          (()
+           (let* ((msg (if source
+                           #'(string-append "`genlayer` statement expects "
+                                            "a `defsrc` statement with the name `"
+                                            (symbol->string source) "'")
+                           #'(string-append "`genlayer` statement expects "
+                                            "an unnamed `defsrc` statement")))
+                  ;; syntax-violation at eval-time omg
+                  (missing-src #`(syntax-violation whom #,msg #'#,block))
+                  (source-kw (if source #'(#:source ,source) #'())))
+             #`(let* ((name `#,name)
+                      (source `#,(if source source #'#f))
+                      (mapper #,mapper)
+                      (found (assq source sources)))
+                 (if found
+                     ;; TODO: look into using placeholders for keywords
+                     `(deflayer ,name #,@source-kw #,@keywords ,@(map mapper (cdr found)))
+                     #,missing-src))))))
+      (go (cdr block) #f #f #f '()))
 
     (define (process-config whom expr)
-      (define (go rest processed name target-type sources genlayers)
-        (syntax-case rest (defcfg defsrc genlayer deflayer)
+      (define (go rest processed name target-type sources)
+        (syntax-case rest (defcfg defsrc genlayer)
           (((defcfg args ...) rest ...) (and (not name)
                                              (not target-type))
            (call-with-values
                (lambda () (process-defcfg whom #'(defcfg args ...)))
              (lambda (defcfg-block name target-type)
                (go #'(rest ...) (cons defcfg-block processed)
-                   name target-type sources genlayers))))
+                   name target-type sources))))
           (((defcfg args ...) rest ...)
-           (syntax-violation whom "multiple `defcfg' blocks not allowed"
+           (syntax-violation whom "multiple `defcfg` blocks not allowed"
                              #'(defcfg args ...)))
 
           ;; accumulate sources for genlayer
           (((defsrc args ...) rest ...)
-           (let ((src (process-defsrc whom #'(defsrc args ...))))
-             (go #'(rest ...) (cons #'(defsrc args ...) processed)
-                 name target-type (cons src sources) genlayers)))
+           (let* ((src (process-defsrc whom #'(defsrc args ...)))
+                  (expansion (if (syntax->datum (car src))
+                                 #`(defsrc ,@(assq #,(car src) sources))
+                                 #`(defsrc ,@(cdr (assq #,(car src) sources))))))
+             ;; `sources` gets bound in the toplevel
+             ;; `kmonad-keyboard-configuration` macro. use it here to not
+             ;; reevaluate everything
+             (go #'(rest ...) (cons expansion processed)
+                 name target-type (cons src sources))))
 
           (((genlayer args ...) rest ...)
            (let ((gen (process-genlayer whom #'(genlayer args ...))))
-             (go #'(rest ...) processed
-                 name target-type sources (cons gen genlayers))))
+             (go #'(rest ...) (cons (list #'unquote gen) processed)
+                 name target-type sources)))
 
           ;; validate-block already throws syntax-violations where appropriate
           (((other args ...) rest ...) (validate-block whom #'(other args ...))
            (go #'(rest ...) (cons #'(other args ...) processed)
-               name target-type sources genlayers))
+               name target-type sources))
 
           (()
            (values (reverse processed)
-                   name target-type sources genlayers))))
-      (go expr '() #f #f '() '()))
-
-    (define (make-genlayers whom sources genlayers)
-      (define (make-layer genlayer)
-        (syntax-case genlayer ()
-          ((name source mapper)
-           #`(let ((found (assq source sources)))
-               (if found `(deflayer name ,@(if source '(#:source source) '())
-                            ,@(map mapper (cdr found)))
-                   ;; syntax-violation at eval-time omg
-                   (syntax-violation
-                    '#,whom
-                    (if source
-                        (string-append "`genlayer' statement expects "
-                                       "a `defsrc' statement with the name `"
-                                       (symbol->string source) "'")
-                        (string-append "`genlayer' statement expects "
-                                       "an unnamed `defsrc' statement"))
-                    source))))
-          (invalid (syntax-violation
-                        (syntax->datum whom)
-                        "misconstructed internal `genlayer' data structure"
-                        #'invalid))))
-      #`(let ((sources `#,sources)) ;; bind at eval-time
-          (list #,@(map make-layer genlayers))))
-
-    (define (make-service-type whom name target-type)
-      #`(let ((name `#,name) ;; bind at eval-time
-              (target-type #,target-type))
-          ;; idk a nice way to use/import these values other than this
-          (if (service-type? target-type)
-              (service-type
-               (name (symbol-append 'kmonad- name))
-               (extensions (list ((@(gnu services) service-extension) target-type identity)))
-               (description (string-append "KMonad configuration for keyboard: "
-                                           (symbol->string name))))
-              ;; i did it again omg
-              (syntax-violation '#,whom "not a <service-type>" #'#,target-type))))
+                   name target-type sources))))
+      (go expr '() #f #f '()))
 
     (syntax-case expr ()
-      ((whom expr ...)
+      ((whom* expr ...)
        (call-with-values (lambda () (process-config (syntax->datum #'whom) #'(expr ...)))
-         (lambda (config name target-type sources genlayers)
-           ;; we already throw errors if we do encounter a `defcfg'
+         (lambda (config name target-type sources)
+           ;; we already throw errors if we do encounter a `defcfg`
            ;; statement. this is in case its still undefined
            (unless (and name target-type)
-             (syntax-violation (syntax->datum #'whom) "missing `defcfg' statement" #'(expr ...)))
-           (define full-config
-             (if (null? genlayers)
-                 #`(quasiquote #,config)
-                 #`(append (quasiquote #,config)
-                           #,(make-genlayers #'whom sources genlayers))))
-           (define service-type (make-service-type #'whom name target-type))
-           #`(service #,service-type (cons '#,name #,full-config)))))
+             (syntax-violation (syntax->datum #'whom) "missing `defcfg` statement" #'(expr ...)))
+
+           ;; syntax-violation at eval-time again
+           (define validate-target-type
+             #`(unless (service-type? target-type)
+                 (syntax-violation
+                  whom "`#:target-type` in `defcfg` did not evaluate to a <service-type>"
+                  '#,target-type)))
+           (define validate-name
+             #`(unless (symbol? name)
+                 (syntax-violation
+                  whom "`#:name` in `defcfg` did not evaluate to a symbol"
+                  '#,name)))
+           (define validate-sources
+             #'(for-each
+                (lambda (src)
+                  (define name (car src))
+                  (define keys (cdr src))
+
+                  (unless (or (not name)
+                              (symbol? name))
+                    (syntax-violation
+                     whom "invalid name for `defsrc` block"
+                     `(defsrc ,name)))
+
+                  (for-each
+                   (lambda (key)
+                     (unless (or (symbol? key) (char? key)
+                                 (and (integer? key) (<= 0 key 9))) ;; 0-9 are keyboard keys
+                       (syntax-violation
+                        whom "invalid key in `defsrc` block"
+                        `(defsrc ,name ,key))))
+                   keys))
+                sources))
+           ;; all "raw" expressions are quasiquoted here so you can unquote
+           ;; whenever. some expressions are not quoted at all by default,
+           ;; although - like `#:target-type` in `defcfg` blocks or the mapper
+           ;; in `genlayer` blocks.
+           #`(let* ((whom 'whom*)
+                    (target-type #,target-type)
+                    (_ #,validate-target-type)
+                    (name `#,name)
+                    (_ #,validate-name)
+                    (sources `#,sources)
+                    (_ #,validate-sources)
+                    (config `#,config)
+                    (type (service-type
+                           (name (symbol-append 'kmonad- name))
+                           (extensions (list (service-extension target-type identity)))
+                           (description
+                            (format #f "KMonad configuration for keyboard: ~a" name)))))
+               (service type (cons name config))))))
       ((whom) (syntax-violation (syntax->datum #'whom) "missing arguments" expr)))))
