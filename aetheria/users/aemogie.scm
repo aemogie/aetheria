@@ -52,19 +52,18 @@
       (home-page "https://github.com/aemogie/nivea"))))
 
 (define kmonad-config
-  (kmonad-keyboard-service
-   (defcfg
-     #:name serena-builtin
-     #:target-type home-kmonad-service-type
-     #:input (device-file "/dev/input/by-path/platform-i8042-serio-0-event-kbd")
-     #:output (uinput-sink "KMonad Remapped Keyboard")
-     #:fallthrough #t)
-   (defsrc
-     caps)
-   (genlayer initial ;; kmonad defaults to the first deflayer
-     (match-lambda
-       ('caps '(tap-next esc lctl))
-       (else else)))))
+  (let* ((src '(caps))
+         (initial (map (match-lambda
+                         ('caps '(tap-next esc lctl))
+                         (els els))
+                       src)))
+    `((defcfg
+        input (device-file "/dev/input/by-path/platform-i8042-serio-0-event-kbd")
+        output (uinput-sink "KMonad Remapped Keyboard")
+        fallthrough #t)
+      (defsrc ,@src)
+      ;; kmonad defaults to the first deflayer
+      (deflayer initial ,@initial))))
 
 (define* (make-aemogie-home hostname)
   (home-environment
@@ -74,7 +73,10 @@
                        (_ '()))
                      %aetheria-desktop-home-packages))
    (services (append (match hostname
-                       ("serena" (list kmonad-config))
+                       ("serena" (list
+                                  (kmonad-keyboard-service 'serena-builtin
+                                                           home-kmonad-service-type
+                                                           kmonad-config)))
                        (_ '()))
                      %aetheria-desktop-home-services))))
 
