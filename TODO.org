@@ -55,10 +55,13 @@ guile
 + [X] kmonad kbd
 + [ ] css
 + [ ] yuck
-+ [ ] hyprland
++ [ ] hyprlang
 + [ ] swayfx
 + [ ] foot
 + [ ] elisp
+
+*** TODO make them use gexps and serialize at build time not eval-time
+also lets us do more steps after serializing like checking with a compiler
 
 ** TODO migrate old serena partitions
 *** TODO NIXHOME -> serena-persist:/home/aemogie
