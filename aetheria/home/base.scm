@@ -1,7 +1,9 @@
 (define-module (aetheria home base)
   #:use-module ((guix gexp) #:select (gexp
                                       scheme-file))
-  #:use-module ((gnu services) #:select (service))
+  #:use-module ((gnu services) #:select (service
+                                         simple-service))
+  #:use-module ((gnu services shepherd) #:select (shepherd-service))
   #:use-module ((gnu system shadow) #:select (%default-dotguile
                                               %default-xdefaults
                                               %default-gdbinit
@@ -44,7 +46,14 @@
   (list
    (service home-bash-service-type)
    ;; started from hyprland config which is being persisted locally for now
-   (service home-shepherd-service-type (home-shepherd-configuration (auto-start? #f)))
+   (service home-shepherd-service-type
+            (home-shepherd-configuration
+             (auto-start? #f)
+             (daemonize? #f)
+             (services (list (shepherd-service
+                              (provision '(repl))
+                              (modules '((shepherd service repl)))
+                              (free-form #~(repl-service)))))))
    (service home-files-service-type
             `((".guile" ,%default-dotguile)
               (".Xdefaults" ,%default-xdefaults)))
