@@ -11,16 +11,16 @@ also do a grep on the codebase for "TODO"s i might've left in the code.
   builds, formatting and more.
 
 * feat
-** TODO kmonad
+** DONE kmonad
 *** DONE make guix service
-*** TODO port old keyd config to kmonad
+*** DONE port old keyd config to kmonad
 the old keyd behaviour was as follows:
 + [X] capslock acts as ctrl when held and esc when tapped
-+ [ ] enter acts as ctrl when held and enter (itself) when tapped
-+ [ ] when ctrl is held, h/j/k/l and g/; should act as left/up/down/right and
++ [X] enter acts as ctrl when held and enter (itself) when tapped
++ [X] when ctrl is held, h/j/k/l and g/; should act as left/up/down/right and
   home/end respectively.
-+ [ ] everything else fallbacks to ctrl (maybe an empty layer with ~implicit-around~)
-+ [ ] disable old keys to force muscle memory: arrow, home, end, esc, lctl.
++ [X] everything else fallbacks to ctrl (maybe an empty layer with ~implicit-around~)
++ [X] disable old keys to force muscle memory: arrow, home, end, esc, lctl.
   rctl is left for using the overriden keys.
 originally try to do a 1:1 port, but maybe look into better worflows in the meanwhile
 
