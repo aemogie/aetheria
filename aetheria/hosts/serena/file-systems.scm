@@ -87,7 +87,7 @@
          "/root/.cache/guix" ;; guix caches channel checkouts here
          "/home/aemogie/.cache/guix"
          "/home/aemogie/.config/guix"
-         "/home/aemogie/.mozilla/icecat"
+         "/home/aemogie/.librewolf"
          ;; temporary configs i copied from nivea
          "/home/aemogie/.config/hypr/hyprland.conf"
          "/home/aemogie/.config/waybar/config"
