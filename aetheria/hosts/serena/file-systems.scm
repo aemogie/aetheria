@@ -95,7 +95,7 @@
          "/home/aemogie/.config/foot/foot.ini"
          "/home/aemogie/.config/YouTube Music"
          "/home/aemogie/.emacs"
-         "/projects")))
+         "/home/aemogie/dev")))
 
 (define serena-file-systems
   (append
