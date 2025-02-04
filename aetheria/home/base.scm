@@ -1,6 +1,7 @@
 (define-module (aetheria home base)
   #:use-module ((guix gexp) #:select (gexp
-                                      scheme-file))
+                                      scheme-file
+                                      file-append))
   #:use-module ((gnu services) #:select (service
                                          simple-service))
   #:use-module ((gnu services shepherd) #:select (shepherd-service))
@@ -16,11 +17,14 @@
   #:use-module ((gnu home services shells) #:select (home-bash-service-type))
   #:use-module ((gnu home services desktop) #:select (home-dbus-service-type))
   #:use-module ((gnu home services sound) #:select (home-pipewire-service-type))
+  #:use-module ((gnu home services gnupg) #:select (home-gpg-agent-service-type
+                                                    home-gpg-agent-configuration))
   #:use-module ((gnu packages base) #:select (gnu-make))
   #:use-module ((gnu packages gcc) #:select (gcc))
   #:use-module ((gnu packages version-control) #:select (git))
-  #:use-module ((gnu packages text-editors) #:select (nano))
   #:use-module ((gnu packages vim) #:select (vim))
+  #:use-module ((gnu packages gnupg) #:select (gnupg
+                                               pinentry-tty))
   #:use-module ((gnu packages wm) #:select (hyprland
                                             waybar
                                             cage))
@@ -54,6 +58,12 @@
                               (provision '(repl))
                               (modules '((shepherd service repl)))
                               (free-form #~(repl-service)))))))
+   (service home-gpg-agent-service-type
+            (home-gpg-agent-configuration
+             (ssh-support? #t)
+             (pinentry-program
+              ;; default pinentry-curses doesnt work with eshell/eat
+              (file-append pinentry-tty "/bin/pinentry-tty"))))
    (service home-files-service-type
             `((".guile" ,%default-dotguile)
               (".Xdefaults" ,%default-xdefaults)))
@@ -66,7 +76,7 @@
   ;; just tiny/essential cli stuff. shouldnt require any graphics, all things
   ;; you can use over ssh for exmaple. fyi: i dont use vim, but the keybinds
   ;; are definitely better than whatever nano got
-  (list gnu-make git gcc vim))
+  (list gnu-make git gcc vim gnupg))
 
 (define %aetheria-base-home
   (home-environment
