@@ -26,6 +26,28 @@ originally try to do a 1:1 port, but maybe look into better worflows in the mean
 
 ** TODO figure out gpg
 
+** TODO migrate record fields to services
+the ~<operating-system>~ and ~<home-environment>~ record fields are fed back
+into the services mechanism to be folded. services are generally more modular,
+albeit less readable than record fields. but for my usage services might make
+things cleaner, as everything would be a service.
+*** TODO ~profile-service-type~
+services can add packages to the profile by extending the
+~profile-service-type~ service with a list of them. standalone packages can
+also use propogated-inputs to pull in runtime dependencies. some of the
+services might not do anything but instead merely be a semantic categorization
+mechanism.
++ ~%aetheria-desktop-home-packages~ from ~(aetheria home base)~
++ ~%aetheria-base-home-packages~ from ~(aetheria home base)~
+*** TODO ~account-service-type~
+The extension type is mentioned to be "<user-account>, <user-group>, and
+skeleton lists."
++ ~serena-users~ from ~(aetheria hosts serena)~
+*** TODO ~file-system-service-type~
+this might be a bit more complicated, take a look at
+~non-boot-file-system-service~. it does some things for resolving device
+mappings. not using luks or such though, so maybe not relevant?
+
 ** TODO emacs configuration
 *** TODO check out guile-emacs
 *** TODO init.el on home-files-service-type
@@ -68,7 +90,8 @@ also lets us do more steps after serializing like checking with a compiler
 *** TODO NIXOS:/nix/store -> serena:/@nivea-store
 *** TODO NIXOS:/niv/var/nix -> serena:/@nivea-meta
 
-** TODO migrate from tmpfs to btrfs
+** TODO ephemeral root and persistence
+*** TODO migrate from tmpfs to btrfs
 nix-impermenance recommends adding the following to ~boot.initrd.postDeviceCommands~. translate it to guix.
 #+BEGIN_SRC sh
   mkdir /btrfs_tmp
@@ -94,6 +117,12 @@ nix-impermenance recommends adding the following to ~boot.initrd.postDeviceComma
   btrfs subvolume create /btrfs_tmp/root
   umount /btrfs_tmp
 #+END_SRC
+*** TODO ~persistance-service-type~
+a ~persistance-service-type~, where the configuration has the persisted
+directory and the linking strategy (mount, fuse mount, symlink, etc), and the
+extensions are the paths to be persisted. also leverage
+~activation-service-type~ to retroactively copy and persist existing files
+that are on the tmpfs system.
 
 ** +introduce ~<aethetria-os>~ and ~<aetheria-home>~ abstraction+
 have a configuration that then gets rendered down to a proper
@@ -101,6 +130,7 @@ have a configuration that then gets rendered down to a proper
 that can be easily extended. (kinda builder pattern?)
 update: that's a bad idea, probably. has very bad implications on
 maintainability.
+update 2: services are what i needed.
 
 ** TODO make ~(aetheria users ...)~ procedures that take in hostname
 and the files themselves could produce a consumable result by calling the
@@ -134,7 +164,7 @@ tooling for this already
 + check for tabs, trailing whitespace, maybe format and more
 
 ** TODO figure out automatic formatting?
-guix has a default `guix format` but it breaks on importing macros
+guix has a default ~guix format~ but it breaks on importing macros
 
 ** TODO figure out a better way to avoid ~#:select~ spam
 i currently use it as it lets me easily see which imports are used and
