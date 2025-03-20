@@ -89,6 +89,7 @@
          "/home/aemogie/.config/guix"
          "/home/aemogie/.librewolf"
          ;; temporary configs i copied from nivea
+         "/home/aemogie/.gnupg"
          "/home/aemogie/.config/hypr/hyprland.conf"
          "/home/aemogie/.config/waybar/config"
          "/home/aemogie/.config/waybar/style.css"
