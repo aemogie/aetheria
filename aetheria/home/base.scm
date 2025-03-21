@@ -1,7 +1,8 @@
 (define-module (aetheria home base)
   #:use-module ((guix gexp) #:select (gexp
                                       scheme-file
-                                      file-append))
+                                      file-append
+                                      plain-file))
   #:use-module ((gnu services) #:select (service
                                          simple-service))
   #:use-module ((gnu services shepherd) #:select (shepherd-service))
@@ -63,10 +64,12 @@
              (ssh-support? #t)
              (pinentry-program
               ;; default pinentry-curses doesnt work with eshell/eat
-              (file-append pinentry-tty "/bin/pinentry-tty"))))
+              (file-append pinentry-tty "/bin/pinentry-tty"))
+             (extra-content "allow-loopback-pinentry")))
    (service home-files-service-type
             `((".guile" ,%default-dotguile)
-              (".Xdefaults" ,%default-xdefaults)))
+              (".Xdefaults" ,%default-xdefaults)
+              (".gnupg/gpg.conf" ,(plain-file "gpg.conf" "pinentry-mode loopback"))))
 
    (service home-xdg-configuration-files-service-type
             `(("gdb/gdbinit" ,%default-gdbinit)
