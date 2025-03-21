@@ -26,6 +26,7 @@
   #:use-module ((gnu packages vim) #:select (vim))
   #:use-module ((gnu packages gnupg) #:select (gnupg
                                                pinentry-tty))
+  #:use-module ((gnu packages ssh) #:select (openssh-sans-x))
   #:use-module ((gnu packages wm) #:select (hyprland
                                             waybar
                                             cage))
@@ -79,7 +80,7 @@
   ;; just tiny/essential cli stuff. shouldnt require any graphics, all things
   ;; you can use over ssh for exmaple. fyi: i dont use vim, but the keybinds
   ;; are definitely better than whatever nano got
-  (list gnu-make git gcc vim gnupg))
+  (list gnu-make git gcc vim gnupg openssh-sans-x))
 
 (define %aetheria-base-home
   (home-environment
