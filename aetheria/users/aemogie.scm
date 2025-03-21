@@ -1,8 +1,10 @@
 (define-module (aetheria users aemogie)
   #:use-module ((ice-9 match) #:select (match-lambda
                                          match))
+  #:use-module ((guix gexp) #:select (plain-file))
   #:use-module ((gnu services) #:select (simple-service))
   #:use-module ((gnu home) #:select (home-environment))
+  #:use-module ((gnu home services) #:select (home-xdg-configuration-files-service-type))
   #:use-module ((aetheria services kmonad) #:select (kmonad-keyboard-service))
   #:use-module ((aetheria home services kmonad) #:select (home-kmonad-service-type))
   #:use-module ((aetheria home base) #:select (%aetheria-desktop-home
@@ -54,6 +56,22 @@
                ((? symbol? sym) (symbol-append 'C- sym)))
              src))))
 
+(define git-config-service
+  (simple-service
+   'aemogie-git-config-service
+   home-xdg-configuration-files-service-type
+   `(("git/config" ,(plain-file "git-config" "\
+[user]
+email = \"lexi.callyscoped@gmail.com\"
+name = \"lexi.callyscoped\"
+signingKey = 1B39BA52B26B3DBB
+
+[commit]
+gpgSign = true
+
+[tag]
+gpgSign = true")))))
+
 (define* (make-aemogie-home hostname)
   (home-environment
    (inherit %aetheria-desktop-home)
@@ -67,6 +85,7 @@
                                    'serena-builtin home-kmonad-service-type
                                    (make-kmonad-config hostname))))
                        (_ '()))
+                     (list git-config-service)
                      %aetheria-desktop-home-services))))
 
 (make-aemogie-home (gethostname))
