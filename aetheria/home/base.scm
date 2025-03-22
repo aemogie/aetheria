@@ -1,6 +1,5 @@
 (define-module (aetheria home base)
   #:use-module ((guix gexp) #:select (gexp
-                                      scheme-file
                                       file-append
                                       plain-file))
   #:use-module ((gnu services) #:select (service
@@ -15,11 +14,15 @@
                                               home-xdg-configuration-files-service-type))
   #:use-module ((gnu home services shepherd) #:select (home-shepherd-service-type
                                                        home-shepherd-configuration))
-  #:use-module ((gnu home services shells) #:select (home-bash-service-type))
+  #:use-module ((gnu home services shells) #:select (home-bash-service-type
+                                                     home-bash-extension))
   #:use-module ((gnu home services desktop) #:select (home-dbus-service-type))
   #:use-module ((gnu home services sound) #:select (home-pipewire-service-type))
   #:use-module ((gnu home services gnupg) #:select (home-gpg-agent-service-type
                                                     home-gpg-agent-configuration))
+  #:use-module ((gnu home services ssh) #:select (home-openssh-service-type
+                                                  home-openssh-configuration
+                                                  openssh-host))
   #:use-module ((gnu packages base) #:select (gnu-make))
   #:use-module ((gnu packages gcc) #:select (gcc))
   #:use-module ((gnu packages version-control) #:select (git))
@@ -48,6 +51,7 @@
             %aetheria-desktop-home-packages
             %aetheria-desktop-home))
 
+;; TODO: clean this up into individual services
 (define %aetheria-base-home-services
   (list
    (service home-bash-service-type)
@@ -67,6 +71,25 @@
               ;; default pinentry-curses doesnt work with eshell/eat
               (file-append pinentry-tty "/bin/pinentry-tty"))
              (extra-content "allow-loopback-pinentry")))
+
+   ;; this sets in on bash, but im sure everything else is broken.
+   ;; eshell starts a new tty each command.
+   ;; i'm not sure how magit works (e.g. magit-clone with ssh repo url).
+   ;; workaround for now, just shell out to bash, e.g.:
+   ;; bash -c 'GPG_TTY=$(tty) git clone git@github.com:aemogie/nivea.git'
+   ;; a graphical pinentry might be easier
+   (simple-service 'gpg-pinentry-tty home-bash-service-type
+                   (home-bash-extension
+                    (bashrc (list (plain-file "bashrc" "export GPG_TTY=\"$(tty)\"")))))
+   (service home-openssh-service-type
+            (home-openssh-configuration
+             (hosts (list
+                     (openssh-host
+                      ;; NOTE: $GPG_TTY must be set before this
+                      ;; source: https://unix.stackexchange.com/a/587691
+                      (match-criteria
+                       (let ((command "gpg-connect-agent UPDATESTARTUPTTY /bye"))
+                         (format #f "host * exec \"~a\"" command))))))))
    (service home-files-service-type
             `((".guile" ,%default-dotguile)
               (".Xdefaults" ,%default-xdefaults)
