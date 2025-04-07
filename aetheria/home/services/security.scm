@@ -83,8 +83,9 @@
   (service-type
    (inherit upstream:home-openssh-service-type)
    (compose identity)
-   (extend (home-openssh-configuration->upstream
-            (fold-home-openssh-configuration extensions config)))
+   (extend (lambda (config extensions)
+             (home-openssh-configuration->upstream
+              (fold-home-openssh-configuration extensions config))))
    (default-value (home-openssh-configuration))))
 
 

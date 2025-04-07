@@ -41,7 +41,7 @@
          (values fold-variant processed))))
     (define (process-fields err fields fold-parts processed)
       (syntax-case fields ()
-        (((field get properties ...) rest ...)
+        ((rest ... (field get properties ...))
          (call-with-values (lambda () (process-properties err #'(properties ...) #'() #f #f))
            (lambda (variant cleaned-properties)
              (process-fields err #'(rest ...)
@@ -93,9 +93,9 @@
                  #,@fields)
                (define (fold-proc lst default)
                  (fold #,(with-syntax
-                                  ((x (datum->syntax #'fold-proc 'x))
-                                   (acc (datum->syntax #'fold-proc 'acc)))
-                                #`(lambda (x acc)
-                                    (syntactic-ctor #,@(map (lambda (fn) (fn #'type #'acc #'x)) fold-parts))))
-                            default
-                            lst)))))))))
+                             ((x (datum->syntax #'fold-proc 'x))
+                              (acc (datum->syntax #'fold-proc 'acc)))
+                           #`(lambda (x acc)
+                               (syntactic-ctor #,@(map (lambda (fn) (fn #'type #'acc #'x)) fold-parts))))
+                       default
+                       lst)))))))))
