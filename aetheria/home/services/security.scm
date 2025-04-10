@@ -29,7 +29,8 @@
                                                pinentry
                                                pinentry-tty))
   #:use-module ((gnu packages ssh) #:select (openssh-sans-x))
-  #:use-module ((aetheria records) #:select (define-foldable-record-type))
+  #:use-module ((aetheria records) #:select (define-foldable-record-type
+                                              define-foldable-wrapper-type))
   #:export (home-openssh-service-type
             home-openssh-configuration
             home-openssh-configuration-authorized-keys
@@ -44,47 +45,20 @@
   (let ((xs* (concatenate (map proc xs))))
     (if (pair? xs*) xs* on-empty)))
 
-(define-foldable-record-type <home-openssh-configuration>
-  home-openssh-configuration make-home-openssh-configuration
-  home-openssh-configuration? fold-home-openssh-configuration
-  (authorized-keys   home-openssh-configuration-authorized-keys ;list of file-like
-                     (fold list))
-  (known-hosts       home-openssh-configuration-known-hosts ;list of file-like
-                     (fold list))
-  (hosts             home-openssh-configuration-hosts ;list of <openssh-host>
-                     (fold list))
-  (add-keys-to-agent home-openssh-configuration-add-keys-to-agent ;string with limited values
-                     (fold conflict)))
-
-
-;; TOOD: make another macro wrapper on top of foldable record type to make
-;; this easier
-(define home-openssh-configuration->upstream
-  (match-lambda
-    (($ <home-openssh-configuration>
-        authorized-keys known-hosts hosts add-keys-to-agent)
-     (define default (upstream:home-openssh-configuration))
-     (upstream:home-openssh-configuration
-      (authorized-keys   (if (null? authorized-keys)
-                             (upstream:home-openssh-configuration-authorized-keys default)
-                             authorized-keys))
-      (known-hosts       (if (null? known-hosts)
-                             (upstream:home-openssh-configuration-known-hosts default)
-                             known-hosts))
-      (hosts             (if (null? hosts)
-                             (upstream:home-openssh-configuration-hosts default)
-                             hosts))
-      (add-keys-to-agent (if (unspecified? add-keys-to-agent)
-                             (upstream:home-openssh-configuration-add-keys-to-agent default)
-                             add-keys-to-agent))))))
-
+(define-foldable-wrapper-type home-openssh-configuration
+  #:wraps upstream:home-openssh-configuration
+  #:wrapped-default (upstream:home-openssh-configuration)
+  (authorized-keys list)                ;list of file-like
+  (known-hosts list)                    ;list of file-like
+  (hosts list)                          ;list of <openssh-host>
+  (add-keys-to-agent conflict)) ;string with limited values
 
 (define home-openssh-service-type
   (service-type
    (inherit upstream:home-openssh-service-type)
    (compose identity)
    (extend (lambda (config extensions)
-             (home-openssh-configuration->upstream
+             (unwrap-home-openssh-configuration
               (fold-home-openssh-configuration extensions config))))
    (default-value (home-openssh-configuration))))
 

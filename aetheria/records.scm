@@ -1,7 +1,8 @@
 (define-module (aetheria records)
   #:use-module ((srfi srfi-1) #:select (fold))
   #:use-module ((guix records) #:select (define-record-type*))
-  #:export (define-foldable-record-type))
+  #:export (define-foldable-record-type
+             define-foldable-wrapper-type))
 
 (define-syntax define-foldable-record-type
   (lambda (syn)
@@ -108,3 +109,57 @@
                                                        fold-parts))))
                        default
                        lst)))))))))
+
+(define-syntax define-foldable-wrapper-type
+  (lambda (syn)
+    (define (id . parts)
+      (datum->syntax syn (apply symbol-append (map syntax->datum parts))))
+    (define (process-fields name in out)
+      (syntax-case in (fold list conflict custom)
+        ((rest ... (field list))
+         (with-syntax ((get (id name #'- #'field)))
+           (process-fields name #'(rest ...)
+                           (cons #'(field get (fold list)) out))))
+        ((rest ... (field conflict))
+         (with-syntax ((get (id name #'- #'field)))
+           (process-fields name #'(rest ...)
+                           (cons #'(field get (fold conflict)) out))))
+        ((rest ... (field custom proc default*))
+         (with-syntax ((get (id name #'- #'field)))
+           (process-fields name #'(rest ...)
+                           (cons #'(field get (fold custom proc) (default default*)) out))))
+        (() out)))
+    (syntax-case syn ()
+      ((me name
+           #:wraps wrapped
+           #:wrapped-default default
+           (field-name rest ...) ...)
+       (let ((processed-fields (process-fields #'name #'((field-name rest ...) ...) #'())))
+         (with-syntax ((type (id #'< #'name #'>))
+                       (syntactic-ctor (id #'name))
+                       (ctor (id #'make- #'name))
+                       (pred (id #'name #'?))
+                       (fold-proc (id #'fold- #'name))
+                       (unwrap (id #'unwrap- #'name))
+                       ((processed-field ...) processed-fields)
+                       (unwrap:self (id #'self))
+                       (unwrap:our-default (id #'our-default))
+                       (unwrap:their-default (id #'their-default)))
+           #`(begin
+               (define-foldable-record-type
+                 type syntactic-ctor ctor pred fold-proc
+                 processed-field ...)
+               (define (unwrap unwrap:self)
+                 (define unwrap:our-default (syntactic-ctor))
+                 (define unwrap:their-default default)
+                 (wrapped
+                  #,@(map
+                      (lambda (field-name)
+                        (with-syntax ((field field-name)
+                                      (get:our (id #'name #'- field-name))
+                                      (get:their (id #'wrapped #'- field-name)))
+                          #`(field (if (equal? (get:our unwrap:self)
+                                               (get:our unwrap:our-default))
+                                       (get:their unwrap:their-default)
+                                       (get:our unwrap:self)))))
+                      #'(field-name ...)))))))))))
