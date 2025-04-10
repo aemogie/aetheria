@@ -12,8 +12,18 @@
   #:use-module ((gnu home services) #:select (home-profile-service-type
                                               home-files-service-type))
   #:use-module ((gnu home services gnupg)
-                #:select (home-gpg-agent-service-type
-                          home-gpg-agent-configuration))
+                #:select (home-gpg-agent-configuration
+                          home-gpg-agent-configuration?
+                          home-gpg-agent-configuration-gnupg
+                          home-gpg-agent-configuration-pinentry-program
+                          home-gpg-agent-configuration-ssh-support?
+                          home-gpg-agent-configuration-default-cache-ttl
+                          home-gpg-agent-configuration-max-cache-ttl
+                          home-gpg-agent-configuration-max-cache-ttl-ssh
+                          home-gpg-agent-configuration-extra-content
+
+                          home-gpg-agent-service-type)
+                #:prefix upstream:)
   #:use-module ((gnu home services ssh)
                 #:select (home-openssh-service-type
                           home-openssh-configuration
@@ -29,21 +39,33 @@
                                                pinentry
                                                pinentry-tty))
   #:use-module ((gnu packages ssh) #:select (openssh-sans-x))
-  #:use-module ((aetheria records) #:select (define-foldable-record-type
-                                              define-foldable-wrapper-type))
-  #:export (home-openssh-service-type
-            home-openssh-configuration
+  #:use-module ((aetheria records) #:select (define-foldable-wrapper-type))
+  #:export (home-openssh-configuration
             home-openssh-configuration-authorized-keys
             home-openssh-configuration-known-hosts
             home-openssh-configuration-hosts
             home-openssh-configuration-add-keys-to-agent
             home-openssh-configuration?
-            home-security-service-type
-            home-security-services))
 
-(define* (flat-map xs proc #:optional (on-empty '()))
-  (let ((xs* (concatenate (map proc xs))))
-    (if (pair? xs*) xs* on-empty)))
+            home-openssh-service-type
+
+            home-gpg-agent-configuration
+            home-gpg-agent-configuration?
+            home-gpg-agent-configuration-gnupg
+            home-gpg-agent-configuration-pinentry-program
+            home-gpg-agent-configuration-ssh-support?
+            home-gpg-agent-configuration-default-cache-ttl
+            home-gpg-agent-configuration-max-cache-ttl
+            home-gpg-agent-configuration-max-cache-ttl-ssh
+            home-gpg-agent-configuration-extra-content
+
+            home-gpg-agent-service-type
+
+            home-security-service-type))
+
+(define upstream:home-gpg-agent-configuration-default-cache-ttl-ssh
+  (module-ref (resolve-module '(gnu home services gnupg))
+              'home-gpg-agent-configuration-default-cache-ttl-ssh))
 
 (define-foldable-wrapper-type home-openssh-configuration
   #:wraps upstream:home-openssh-configuration
@@ -62,6 +84,26 @@
               (fold-home-openssh-configuration extensions config))))
    (default-value (home-openssh-configuration))))
 
+(define-foldable-wrapper-type home-gpg-agent-configuration
+  #:wraps upstream:home-gpg-agent-configuration
+  #:wrapped-default (upstream:home-gpg-agent-configuration)
+  (gnupg conflict)                      ; file-like
+  (pinentry-program conflict)           ; file-like
+  (ssh-support? conflict)               ; boolean
+  (default-cache-ttl conflict)          ; integer
+  (max-cache-ttl conflict)              ; integer
+  (default-cache-ttl-ssh conflict)      ; integer
+  (max-cache-ttl-ssh conflict)          ; integer
+  (extra-content lines)) ; raw-configuration-string
+
+(define home-gpg-agent-service-type
+  (service-type
+   (inherit upstream:home-gpg-agent-service-type)
+   (compose identity)
+   (extend (lambda (config extensions)
+             (unwrap-home-gpg-agent-configuration
+              (fold-home-gpg-agent-configuration extensions config))))
+   (default-value (home-gpg-agent-configuration))))
 
 (define home-security-service-type
   (service-type
@@ -71,7 +113,14 @@
                 (service-extension home-profile-service-type
                                    (const (list gnupg openssh-sans-x)))
 
-                ;; TOOD home-gpg-agent-service-type extension goes here
+                (service-extension home-gpg-agent-service-type
+                                   (const (home-gpg-agent-configuration
+                                           (ssh-support? #t)
+                                           ;; default pinentry-curses doesnt work with
+                                           ;; eshell/eat
+                                           (pinentry-program
+                                            (file-append pinentry-tty "/bin/pinentry-tty"))
+                                           (extra-content "allow-loopback-pinentry"))))
 
                 (service-extension
                  home-files-service-type
@@ -98,16 +147,3 @@
                                    (let ((command "gpg-connect-agent UPDATESTARTUPTTY /bye"))
                                      (format #f "host * exec \"~a\"" command)))))))))))
    (default-value #f)))
-
-(define home-security-services
-  (list
-   (service home-security-service-type)
-   ;; TODO: move into home-security-service-type
-   (service home-gpg-agent-service-type
-            (home-gpg-agent-configuration
-             (ssh-support? #t)
-             ;; default pinentry-curses doesnt work with
-             ;; eshell/eat
-             (pinentry-program
-              (file-append pinentry-tty "/bin/pinentry-tty"))
-             (extra-content "allow-loopback-pinentry")))))

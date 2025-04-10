@@ -7,7 +7,11 @@
 (define-syntax define-foldable-record-type
   (lambda (syn)
     (define (process-properties err properties processed fold-variant default-found?)
-      (syntax-case properties (fold conflict list custom default)
+      (syntax-case properties (fold default
+                                    conflict
+                                    list
+                                    lines
+                                    custom)
         ((rest ... (fold _)) (and fold-variant)
          (err "multiple duplicate fold variants"))
 
@@ -18,6 +22,8 @@
          (err "cannot set default value on coflict variant"))
         ((rest ... (fold list)) default-found?
          (err "cannot set default value on list variant"))
+        ((rest ... (fold lines)) default-found?
+         (err "cannot set default value on lines variant"))
         ((rest ... (default default-found?))
          (process-properties err #'(rest ...) (cons #'(default default-found?) processed)
                              fold-variant #'default-found?))
@@ -29,6 +35,9 @@
         ((rest ... (fold list))
          (process-properties err #'(rest ...) (cons #'(default '()) processed)
                              'list (datum->syntax syn #''())))
+        ((rest ... (fold lines))
+         (process-properties err #'(rest ...) (cons #'(default *unspecified*) processed)
+                             'lines (datum->syntax syn #'*unspecified*)))
 
         ;; custom fold, remember to validate
         ((rest ... (fold custom proc-unchecked))
@@ -61,7 +70,8 @@
         (()
          (values fold-parts processed))))
     (define (make-fold-part record x acc field get variant)
-      (syntax-case (list record x acc field get variant) (conflict list)
+      (syntax-case (list record x acc field get variant)
+          (conflict list lines)
         ((record x acc field get list)
          #'(field (append (get acc) (get x))))
         ((record x acc field get conflict)
@@ -73,6 +83,11 @@
                      (#,conflict-case (error 'record #,msg acc x))
                      ((not (unspecified? (get acc))) (get acc))
                      ((not (unspecified? (get x))) (get x))))))
+        ((record x acc field get lines)
+         #`(field (cond
+                   ((unspecified? (get acc)) (get x))
+                   ((unspecified? (get x)) (get acc))
+                   (else (string-append (get acc) "\n" (get x))))))
         ((record x acc field get custom)
          #'(field (let* ((custom* custom)
                          (arity (procedure-minimum-arity custom*)))
@@ -115,7 +130,7 @@
     (define (id . parts)
       (datum->syntax syn (apply symbol-append (map syntax->datum parts))))
     (define (process-fields name in out)
-      (syntax-case in (fold list conflict custom)
+      (syntax-case in (fold list conflict lines custom)
         ((rest ... (field list))
          (with-syntax ((get (id name #'- #'field)))
            (process-fields name #'(rest ...)
@@ -124,6 +139,10 @@
          (with-syntax ((get (id name #'- #'field)))
            (process-fields name #'(rest ...)
                            (cons #'(field get (fold conflict)) out))))
+        ((rest ... (field lines))
+         (with-syntax ((get (id name #'- #'field)))
+           (process-fields name #'(rest ...)
+                           (cons #'(field get (fold lines)) out))))
         ((rest ... (field custom proc default*))
          (with-syntax ((get (id name #'- #'field)))
            (process-fields name #'(rest ...)
