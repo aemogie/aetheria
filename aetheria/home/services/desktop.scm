@@ -1,9 +1,12 @@
 (define-module (aetheria home services desktop)
-  #:use-module ((gnu services) #:select (service-type
+  #:use-module ((gnu services) #:select (service
+                                         service-type
                                          service-extension))
   #:use-module ((gnu home services) #:select (home-profile-service-type))
   #:use-module ((gnu home services desktop) #:select (home-dbus-service-type))
   #:use-module ((gnu home services sound) #:select (home-pipewire-service-type))
+  #:use-module ((gnu home services shepherd) #:select (home-shepherd-service-type
+                                                       home-shepherd-configuration))
   #:use-module ((gnu packages fonts) #:select (font-iosevka
                                                font-iosevka-comfy
                                                font-sarasa-gothic
@@ -19,7 +22,9 @@
   #:use-module ((gnu packages librewolf) #:select (librewolf))
   #:use-module ((gnu packages terminals) #:select (foot))
   #:use-module ((gnu packages emacs) #:select (emacs-pgtk-xwidgets))
-  #:export (home-desktop-service-type))
+  #:use-module ((aetheria home services base) #:select (home-base-service-type))
+  #:export (home-desktop-service-type
+            %aetheria-desktop-home-services))
 
 (define %default-font-packages
   (list font-iosevka
@@ -48,8 +53,19 @@
    (name 'home-desktop)
    (description "aetheria] setup and configure desktop utlities")
    (default-value #f)
-   (extensions (list (service-extension home-profile-service-type
+   (extensions (list (service-extension home-base-service-type (const #f))
+                     (service-extension home-profile-service-type
                                         (const %desktop-home-packages))
                      (service-extension home-font-service-type (const #f))
                      (service-extension home-dbus-service-type (const #f))
                      (service-extension home-pipewire-service-type (const #f))))))
+
+(define %aetheria-desktop-home-services
+  (list
+   ;; started from hyprland config which is being persisted locally
+   ;; for now. dont know how to move this to a service
+   (service home-shepherd-service-type
+            (home-shepherd-configuration
+             (auto-start? #f)
+             (daemonize? #f)))
+   (service home-desktop-service-type)))
