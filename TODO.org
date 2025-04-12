@@ -56,8 +56,8 @@ services can add packages to the profile by extending the
 also use propogated-inputs to pull in runtime dependencies. some of the
 services might not do anything but instead merely be a semantic categorization
 mechanism.
-+ ~%aetheria-desktop-home-packages~ from ~(aetheria home base)~
-+ ~%aetheria-base-home-packages~ from ~(aetheria home base)~
++ [X] ~%aetheria-desktop-home-packages~ from ~(aetheria home base)~
++ [ ] ~%aetheria-base-home-packages~ from ~(aetheria home base)~
 *** TODO ~account-service-type~
 The extension type is mentioned to be "<user-account>, <user-group>, and
 skeleton lists."

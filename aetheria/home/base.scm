@@ -13,33 +13,16 @@
   #:use-module ((gnu home services shepherd) #:select (home-shepherd-service-type
                                                        home-shepherd-configuration))
   #:use-module ((gnu home services shells) #:select (home-bash-service-type))
-  #:use-module ((gnu home services desktop) #:select (home-dbus-service-type))
-  #:use-module ((gnu home services sound) #:select (home-pipewire-service-type))
   #:use-module ((gnu packages base) #:select (gnu-make))
   #:use-module ((gnu packages gcc) #:select (gcc))
   #:use-module ((gnu packages version-control) #:select (git))
   #:use-module ((gnu packages vim) #:select (vim))
   #:use-module ((gnu packages shellutils) #:select (direnv))
-  #:use-module ((gnu packages wm) #:select (hyprland
-                                            waybar
-                                            cage))
-  #:use-module ((gnu packages linux) #:select (bluez))
-  #:use-module ((gnu packages librewolf) #:select (librewolf))
-  #:use-module ((gnu packages emacs) #:select (emacs-pgtk-xwidgets))
-  #:use-module ((gnu packages xdisorg) #:select (wl-clipboard))
-  #:use-module ((gnu packages terminals) #:select (foot))
-  #:use-module ((gnu packages fonts) #:select (font-iosevka
-                                               font-iosevka-comfy
-                                               font-google-noto
-                                               font-google-noto-emoji
-                                               font-google-noto-sans-cjk
-                                               font-google-noto-serif-cjk))
   #:use-module ((aetheria home services security) #:select (home-security-service-type))
+  #:use-module ((aetheria home services desktop) #:select (home-desktop-service-type))
   #:export (%aetheria-base-home-services
             %aetheria-base-home-packages
             %aetheria-base-home
-            %aetheria-desktop-home-services
-            %aetheria-desktop-home-packages
             %aetheria-desktop-home))
 
 ;; TODO: clean this up into individual services
@@ -75,22 +58,8 @@
    (services %aetheria-base-home-services)
    (packages %aetheria-base-home-packages)))
 
-(define %aetheria-desktop-home-services
-  (cons*
-   (service home-dbus-service-type)
-   (service home-pipewire-service-type)
-   %aetheria-base-home-services))
-
-(define %aetheria-desktop-home-packages
-  (cons*
-   hyprland waybar wl-clipboard cage bluez
-   librewolf foot emacs-pgtk-xwidgets ;; TODO: emacs module?
-   font-iosevka font-iosevka-comfy
-   ;; no tofu or something, i dont really know
-   font-google-noto font-google-noto-emoji font-google-noto-sans-cjk font-google-noto-serif-cjk
-   %aetheria-base-home-packages))
-
 (define %aetheria-desktop-home
   (home-environment
-   (services %aetheria-desktop-home-services)
-   (packages %aetheria-desktop-home-packages)))
+   (inherit %aetheria-base-home)
+   (services (cons (service home-desktop-service-type)
+                   %aetheria-base-home-services))))
