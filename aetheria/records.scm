@@ -213,37 +213,68 @@
                     (type (datum->syntax #'name* (symbol-append '< name '>)))
                     (syntactic-ctor (datum->syntax #'name* name))
                     (ctor (datum->syntax #'name* (symbol-append 'make- name)))
-                    (pred (datum->syntax #'name* (symbol-append name '?))))
+                    (pred (datum->syntax #'name* (symbol-append name '?)))
+                    (this-identifier (datum->syntax #'name* 'this-record)))
            (syntax-case args ()
              ((#:type type* rest ...)
               (loop #'(rest ...)
                     #'type*
                     syntactic-ctor
                     ctor
-                    pred))
+                    pred
+                    this-identifier))
              ((#:syntactic-ctor syntactic-ctor* rest ...)
               (loop #'(rest ...)
                     type
                     #'syntactic-ctor*
                     ctor
-                    pred))
+                    pred
+                    this-identifier))
              ((#:ctor ctor* rest ...)
               (loop #'(rest ...)
                     type
                     syntactic-ctor
                     #'ctor*
-                    pred))
+                    pred
+                    this-identifier))
              ((#:pred pred* rest ...)
               (loop #'(rest ...)
                     type
                     syntactic-ctor
                     ctor
-                    #'pred*))
+                    #'pred*
+                    this-identifier))
+             ((#:this-identifier this-identifier* rest ...)
+              (loop #'(rest ...)
+                    type
+                    syntactic-ctor
+                    ctor
+                    pred
+                    #'this-identifier*))
              (((fields ...) ...)
-              (with-syntax ((type type)
-                            (syntactic-ctor syntactic-ctor)
-                            (ctor ctor)
-                            (pred pred))
-                #'(define-record-type* type
-                    syntactic-ctor ctor pred
-                    (fields ...) ...))))))))))
+              (let ((fields*
+                     (let field-loop ((fields-syn #'((fields ...) ...))
+                                      (forward '()))
+                       (syntax-case fields-syn ()
+                         ((rest ... (field (attr ...) ...))
+                          (let* ((get (symbol-append name '- (syntax->datum #'field))))
+                            (with-syntax ((get (datum->syntax #'field get)))
+                              (field-loop
+                               #'(rest ...)
+                               (cons #'(field get (attr ...) ...) forward)))))
+                         ((rest ... (field get (attr ...) ...))
+                          (field-loop
+                           #'(rest ...)
+                           (cons #'(field get (attr ...) ...) forward)))
+                         (() forward)))))
+                (with-syntax
+                    ((type type)
+                     (syntactic-ctor syntactic-ctor)
+                     (ctor ctor)
+                     (pred pred)
+                     (this-identifier this-identifier)
+                     ((fields* ...) fields*))
+                  #'(define-record-type* type
+                      syntactic-ctor ctor pred
+                      this-identifier
+                      fields* ...)))))))))))
