@@ -202,3 +202,48 @@
                     strategies ...))
                  (define (fold-proc lst)
                    (fold merge-proc (syntactic-ctor) lst))))))))))
+
+
+(define-syntax define-record-type2
+  (lambda (syn)
+    (syntax-case syn ()
+      ((_ name* args ...)
+       (let ((name (syntax->datum #'name*)))
+         (let loop ((args #'(args ...))
+                    (type (datum->syntax #'name* (symbol-append '< name '>)))
+                    (syntactic-ctor (datum->syntax #'name* name))
+                    (ctor (datum->syntax #'name* (symbol-append 'make- name)))
+                    (pred (datum->syntax #'name* (symbol-append name '?))))
+           (syntax-case args ()
+             ((#:type type* rest ...)
+              (loop #'(rest ...)
+                    #'type*
+                    syntactic-ctor
+                    ctor
+                    pred))
+             ((#:syntactic-ctor syntactic-ctor* rest ...)
+              (loop #'(rest ...)
+                    type
+                    #'syntactic-ctor*
+                    ctor
+                    pred))
+             ((#:ctor ctor* rest ...)
+              (loop #'(rest ...)
+                    type
+                    syntactic-ctor
+                    #'ctor*
+                    pred))
+             ((#:pred pred* rest ...)
+              (loop #'(rest ...)
+                    type
+                    syntactic-ctor
+                    ctor
+                    #'pred*))
+             (((fields ...) ...)
+              (with-syntax ((type type)
+                            (syntactic-ctor syntactic-ctor)
+                            (ctor ctor)
+                            (pred pred))
+                #'(define-record-type* type
+                    syntactic-ctor ctor pred
+                    (fields ...) ...))))))))))
