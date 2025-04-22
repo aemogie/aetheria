@@ -82,7 +82,9 @@
 
 (define upstream:<home-gpg-agent-configuration>
   (module-ref (resolve-module '(gnu home services gnupg))
-              '<home-gpg-agent-configuration>))
+              ;; <home-openssh-configuration> works but not this?  both are
+              ;; <syntax-transformers> but it only complains about this??
+              '#{% <home-gpg-agent-configuration> rtd}#))
 
 (define-record-type2 home-gpg-agent-configuration #:fold
   #:unwrap (upstream:<home-gpg-agent-configuration>
