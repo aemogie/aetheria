@@ -52,7 +52,7 @@
 (define home-desktop-service-type
   (service-type
    (name 'home-desktop)
-   (description "aetheria] setup and configure desktop utlities")
+   (description "aetheria setup and configure desktop utlities")
    (default-value #f)
    (extensions (list (service-extension home-base-service-type (const #f))
                      (service-extension home-profile-service-type
