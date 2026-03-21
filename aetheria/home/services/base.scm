@@ -20,6 +20,7 @@
   #:use-module ((gnu packages version-control) #:select (git))
   #:use-module ((gnu packages vim) #:select (vim))
   #:use-module ((gnu packages shellutils) #:select (direnv))
+  #:use-module ((gnu packages password-utils) #:select (password-store))
   #:use-module ((aetheria home services security) #:select (home-security-service-type))
   #:export (home-base-service-type))
 
@@ -27,7 +28,7 @@
   ;; just tiny/essential cli stuff. shouldnt require any graphics, all things
   ;; you can use over ssh for exmaple. fyi: i dont use vim, but the keybinds
   ;; are definitely better than whatever nano got
-  (list direnv git vim))
+  (list direnv git vim password-store))
 
 (define home-base-service-type
   (service-type
