@@ -14,6 +14,7 @@
   #:use-module ((gnu home services shepherd) #:select (home-shepherd-service-type))
   #:use-module ((gnu home services shells) #:select (home-bash-service-type
                                                      home-bash-extension))
+  #:use-module ((gnu home services syncthing) #:select (home-syncthing-service-type))
   #:use-module ((gnu packages base) #:select (gnu-make))
   #:use-module ((gnu packages gcc) #:select (gcc))
   #:use-module ((gnu packages version-control) #:select (git))
@@ -35,6 +36,7 @@
    (default-value #f)
    (extensions (list
                 (service-extension home-security-service-type (const #f))
+                (service-extension home-syncthing-service-type (const #f))
                 (service-extension home-profile-service-type (const %base-home-packages))
                 (service-extension home-bash-service-type (const (home-bash-extension)))
                 (service-extension home-shepherd-service-type
