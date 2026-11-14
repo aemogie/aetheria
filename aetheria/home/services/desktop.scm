@@ -50,7 +50,7 @@
    (extensions (list (service-extension home-profile-service-type identity)))))
 
 (define %desktop-home-packages
-  (list hyprland waybar wl-clipboard cage bluez
+  (list wl-clipboard cage bluez
         librewolf foot))
 
 (define home-desktop-service-type

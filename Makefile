@@ -1,15 +1,16 @@
 verbosity ?= 3
-system ?= $(shell hostname)
-home ?= $(shell whoami)
+AETHERIA_HOST ?= $(shell hostname)
+AETHERIA_USER ?= $(shell whoami)
+export AETHERIA_HOST
+export AETHERIA_USER
 
 # do it twice because guile auto compiles the channel file
 # so if the channel definition abi changed we have to compile it again
 # it's cached so negligible on performances
-guix := guix time-machine -C channels.lock.scm -- \
-	     time-machine -C channels.lock.scm --
+guix := guix time-machine -C channels.lock.scm -c $$(nproc) --
 sources := $(wildcard aetheria/**/*.scm)
-guix_system_options := -v $(verbosity) -L. -e '((@ (aetheria) system-config) "$(system)")'
-guix_home_options := -v $(verbosity) -L. -e '((@ (aetheria) home-config) "$(home)")'
+guix_system_options := -v $(verbosity) -c $$(nproc) -L. -e '((@ (aetheria) system-config))'
+guix_home_options := -v $(verbosity) -c $$(nproc) -L. -e '((@ (aetheria) home-config))'
 
 .PHONY: system home geiser-repl --build-dirs update-lockfile system-container home-container run-vm style! clean
 
@@ -46,8 +47,7 @@ endef
 $(guile $(guile_helpers))
 build/tmp/channels.lock.scm: --build-dirs
 	$(guile (write-channel-lock-header))
-	guix time-machine -C channels.scm -- \
-	     time-machine -C channels.scm -- \
+	guix time-machine -C channels.scm -c $$(nproc) -- \
 	     describe -f channels >> build/tmp/channels.lock.scm || exit 1
 
 # doesnt depend on channels.scm as you might need to update lockfile without updating channels

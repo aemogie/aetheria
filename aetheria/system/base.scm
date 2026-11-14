@@ -67,7 +67,7 @@
                         (services (list (service home-base-service-type)))))))
    nonguix-substitute-service
    guix-science-substitute-service
-   (service kmonad-service-type) ;; for udev rules
+   #;(service kmonad-service-type) ;; for udev rules
    (service bluetooth-service-type
             (bluetooth-configuration (auto-enable? #t)))
    (modify-services %desktop-services

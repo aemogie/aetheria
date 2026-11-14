@@ -1,0 +1,51 @@
+(define-module (aetheria hosts mirae)
+  #:use-module ((gnu system) #:select (operating-system))
+  #:use-module ((gnu system linux-initrd) #:select (%base-initrd-modules))
+  #:use-module ((gnu system accounts) #:select (user-account))
+  #:use-module ((gnu system shadow) #:select (%base-user-accounts))
+  #:use-module ((gnu services) #:select (service simple-service))
+  #:use-module ((gnu services guix) #:select (guix-home-service-type))
+  #:use-module ((gnu home) #:select (home-environment))
+  #:use-module ((nongnu packages linux) #:select (linux
+                                                  linux-firmware
+                                                  sof-firmware))
+  #:use-module ((nongnu system linux-initrd) #:select (microcode-initrd))
+  #:use-module ((aetheria system base) #:select (%aetheria-base-system
+                                                 %aetheria-base-services
+                                                 %aetheria-user-template))
+  #:use-module ((aetheria hosts mirae file-systems) #:select (mirae-file-systems
+                                                               mirae-persist))
+  #:use-module ((aetheria users aemogie) #:select (make-aemogie-home))
+  #:use-module ((aetheria home services desktop) #:select (%aetheria-desktop-home-services))
+  #:export (mirae
+            mirae-with-nonfree))
+
+(define mirae
+  (operating-system
+    (inherit %aetheria-base-system)
+    (host-name "mirae")
+    (timezone "Asia/Colombo")
+    (file-systems mirae-file-systems)
+    (users (cons* (user-account
+                    (inherit %aetheria-user-template)
+                    (name "aemogie"))
+                  %base-user-accounts))
+    (services
+     (cons*
+      (simple-service
+       'mirae-home-environments
+       guix-home-service-type
+       `(("aemogie" ,(home-environment
+                       (services %aetheria-desktop-home-services)))))
+      mirae-persist
+      %aetheria-base-services))))
+
+(define mirae-with-nonfree
+  (operating-system
+    (inherit mirae)
+    (kernel linux)
+    (initrd microcode-initrd)
+    (firmware (list linux-firmware sof-firmware))))
+
+;; consumed by (@ (aetheria) system-config)
+mirae-with-nonfree
