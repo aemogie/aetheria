@@ -15,7 +15,7 @@
                                               home-profile-service-type))
   #:use-module ((gnu home services shepherd) #:select (home-shepherd-service-type
                                                        shepherd-service))
-  #:use-module ((gnu packages emacs) #:select (emacs-pgtk-xwidgets))
+  #:use-module ((gnu packages emacs) #:select (emacs-pgtk))
   #:use-module ((gnu packages aspell) #:select (aspell aspell-dict-en))
   #:use-module ((aetheria records) #:select (define-record-type2
                                               conflict-strategy
@@ -33,7 +33,7 @@
 
 (define %aetheria-home-emacs-configuration
   (home-emacs-configuration
-   (package emacs-pgtk-xwidgets)
+   (package emacs-pgtk)
    (extra-packages (list aspell aspell-dict-en))
    (use-server? #t)))
 
