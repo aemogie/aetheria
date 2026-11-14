@@ -13,6 +13,8 @@
                                               guix-extension
                                               %default-authorized-guix-keys))
   #:use-module ((gnu services shepherd) #:select (shepherd-root-service-type
+                                                  shepherd-service
+                                                  shepherd-transient-service-type
                                                   shepherd-configuration
                                                   shepherd-configuration-shepherd))
   #:use-module ((gnu services guix) #:select (guix-home-service-type))
@@ -26,7 +28,7 @@
   #:use-module ((gnu bootloader grub) #:select (grub-efi-bootloader))
   #:use-module ((gnu system file-systems) #:select (%base-file-systems))
   #:use-module ((gnu system accounts) #:select (user-account))
-  #:use-module ((guix gexp) #:select (local-file))
+  #:use-module ((guix gexp) #:select (gexp local-file))
   #:use-module ((guix store) #:select (%default-substitute-urls))
   #:use-module ((guix describe) #:select (current-channels))
   #:use-module ((aetheria) #:select (%project-root))
@@ -75,6 +77,14 @@
    (service nix-service-type
             (nix-configuration
              (extra-config '("extra-experimental-features = flakes nix-command"))))
+   (simple-service
+    'shepherd-repl
+    shepherd-root-service-type
+    (list (shepherd-service
+           (provision '(repl))
+           (modules '((shepherd service repl)))
+           (free-form #~(repl-service)))))
+   (simple-service 'shepherd-transient shepherd-transient-service-type '())
    (modify-services %desktop-services
      ;; use the build-time (current-channels) for the system as well
      (guix-service-type
