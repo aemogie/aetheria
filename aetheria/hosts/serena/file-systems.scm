@@ -129,7 +129,10 @@
   (append
    serena-partitions
    (list
-    (persist-bind nivea "/nix/store")  ;; TODO: move to btrfs pool
+    (file-system ;; TODO: move to btrfs pool
+      (inherit (persist-bind nivea "/nix/store"))
+      ;; this is needed to avoid collisions with nix-service-type immutable store remount
+      (needed-for-boot? #t))
     ;; TODO: think of how to make /@persist read-only while making the mounted
     ;; versions read/write
     ;; (remount-read-only (file-system-mount-point persist-part)

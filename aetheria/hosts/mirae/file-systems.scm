@@ -39,6 +39,11 @@
       (mount-may-fail? #f)
       (needed-for-boot? #t))
      (mirae-part "@aetheria-meta" "/var/guix")
+    (file-system
+      (inherit (mirae-part "@nivea-store" "/nix/store"))
+      ;; this is needed to avoid collisions with nix-service-type immutable store remount
+      (needed-for-boot? #t))
+     (mirae-part "@nivea-meta" "/nix/var/nix")
      persist-part))
 
 (define (make-persist-service path user)

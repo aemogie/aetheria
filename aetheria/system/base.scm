@@ -16,6 +16,8 @@
                                                   shepherd-configuration
                                                   shepherd-configuration-shepherd))
   #:use-module ((gnu services guix) #:select (guix-home-service-type))
+  #:use-module ((gnu services nix) #:select (nix-service-type
+                                             nix-configuration))
   #:use-module ((gnu system) #:select (operating-system-default-essential-services
                                        operating-system
                                        this-operating-system))
@@ -70,6 +72,9 @@
    #;(service kmonad-service-type) ;; for udev rules
    (service bluetooth-service-type
             (bluetooth-configuration (auto-enable? #t)))
+   (service nix-service-type
+            (nix-configuration
+             (extra-config '("extra-experimental-features = flakes nix-command"))))
    (modify-services %desktop-services
      ;; use the build-time (current-channels) for the system as well
      (guix-service-type
