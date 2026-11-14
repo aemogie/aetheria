@@ -40,8 +40,6 @@ define guile_helpers
       (display ";; DO NOT MODIFY!" lockfile) (newline lockfile)
       (display ";; instead, make your changes to channels.scm, then run `make update-lockfile`"
                lockfile) (newline lockfile)
-      (define header (call-with-input-file "channels.scm" read))
-      (pretty-print header lockfile)
       (newline lockfile))))
 endef
 $(guile $(guile_helpers))

@@ -1,12 +1,5 @@
 ;; DO NOT MODIFY!
 ;; instead, make your changes to channels.scm, then run `make update-lockfile`
-(use-modules
-  ((guix channels)
-   #:select
-   (channel
-     make-channel-introduction
-     openpgp-fingerprint
-     %default-guix-channel)))
 
 (list (channel
         (name 'nonguix)
