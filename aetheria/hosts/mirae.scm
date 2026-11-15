@@ -35,8 +35,7 @@
       (simple-service
        'mirae-home-environments
        guix-home-service-type
-       `(("aemogie" ,(home-environment
-                       (services %aetheria-desktop-home-services)))))
+       `(("aemogie" ,(make-aemogie-home host-name))))
       mirae-persist
       %aetheria-base-services))))
 

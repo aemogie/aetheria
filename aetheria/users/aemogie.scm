@@ -90,20 +90,18 @@ a.out
 
 (define* (make-aemogie-home hostname)
   (home-environment
-   (packages (append (match hostname
-                       ("serena" '())
-                       (_ '()))
-                     (list typst)))
-   (services (append (match hostname
-                       ("serena" (list
-                                  (kmonad-keyboard-service
-                                   'serena-builtin home-kmonad-service-type
-                                   (make-kmonad-config hostname))
-                                  (service home-emacs-service-type
-                                           (home-emacs-configuration
-                                            (inherit %aetheria-home-emacs-configuration)
-                                            (package serena-nivea-emacs)))))
-                       (_ '()))
+   (packages (list typst))
+   (services (append (if (eq? hostname "serena")
+                         (list (kmonad-keyboard-service
+                                'serena-builtin home-kmonad-service-type
+                                (make-kmonad-config hostname)))
+                         '())
+                     (if (eq? hostname "serena")
+                         (list (service home-emacs-service-type
+                                        (home-emacs-configuration
+                                         (inherit %aetheria-home-emacs-configuration)
+                                         (package serena-nivea-emacs))))
+                         (list (service home-emacs-service-type)))
                      (list git-config-service)
                      %aetheria-desktop-home-services))))
 
