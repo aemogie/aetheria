@@ -5,8 +5,6 @@
                                                     %base-file-systems))
   #:use-module ((gnu services linux) #:select (vfs-mapping-service-type vfs-mapping))
   #:use-module ((gnu services) #:select (simple-service))
-  #:use-module ((aetheria system file-systems) #:select (btrfs-file-system
-                                                         persist-bind))
   #:export (serena-file-systems
             serena-persist))
 
@@ -16,6 +14,18 @@
     (device (file-system-label "BOOTTMP"))
     (mount-point "/boot")
     (type "vfat")
+    (mount-may-fail? #t)))
+
+(define* (btrfs-file-system #:key device mount-point (ssd? #f) (subvolume #f))
+  (define ssd-options (if ssd? '("discard=async" "ssd") '()))
+  (define subvol-options (if subvolume (list (string-append "subvol=" subvolume)) '()))
+  (file-system
+    (device device)
+    (mount-point mount-point)
+    (type "btrfs")
+    (flags '(no-atime))
+    (options (string-join (append ssd-options subvol-options) ","))
+    ;; yet defaults to false, yet doesnt even give any logs when it fails. just hangs.
     (mount-may-fail? #t)))
 
 (define (serena-part subvol mount-point)

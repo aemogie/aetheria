@@ -11,6 +11,7 @@ guix := guix time-machine -C channels.lock.scm -c $$(nproc) --
 sources := $(wildcard aetheria/**/*.scm)
 guix_system_options := -v $(verbosity) -c $$(nproc) -L. -e '((@ (aetheria) system-config))'
 guix_home_options := -v $(verbosity) -c $$(nproc) -L. -e '((@ (aetheria) home-config))'
+export GUILE_AUTO_COMPILE=0
 
 .PHONY: system home geiser-repl --build-dirs update-lockfile system-container home-container run-vm style! clean
 

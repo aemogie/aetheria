@@ -2,6 +2,8 @@
   #:use-module ((ice-9 match) #:select (match-lambda
                                          match))
   #:use-module ((guix gexp) #:select (plain-file))
+  #:use-module ((gnu system accounts) #:select (user-account
+                                                user-account-home-directory))
   #:use-module ((gnu services) #:select (simple-service
                                          service))
   #:use-module ((gnu home) #:select (home-environment
@@ -9,15 +11,24 @@
                                      home-environment-user-services))
   #:use-module ((gnu home services) #:select (home-xdg-configuration-files-service-type))
   #:use-module ((guix-science packages typst) #:select (typst))
+  #:use-module ((aetheria system base) #:select (%aetheria-user-template))
   #:use-module ((aetheria services kmonad) #:select (kmonad-keyboard-service))
   #:use-module ((aetheria home services kmonad) #:select (home-kmonad-service-type))
   #:use-module ((aetheria home services desktop) #:select (%aetheria-desktop-home-services))
   #:use-module ((aetheria home services emacs) #:select (home-emacs-service-type
                                                          %aetheria-home-emacs-configuration
                                                          home-emacs-configuration))
+  #:use-module ((aetheria home services persist) #:select (home-persist-service-type
+                                                           persist-configuration-defaults))
   #:use-module ((aetheria users aemogie serena) #:select (serena-nivea-emacs
                                                           serena-keyboard))
-  #:export (make-aemogie-home))
+  #:export (make-aemogie-home
+            aemogie-account))
+
+(define aemogie-account
+  (user-account
+    (inherit %aetheria-user-template)
+    (name "aemogie")))
 
 (define (make-kmonad-config hostname)
   (define src
@@ -88,6 +99,24 @@ gpgSign = true"))
 a.out
 ")))))
 
+(define persist-service
+  (simple-service
+   'aemogie-persist-service
+   home-persist-service-type
+   (cons
+    (persist-configuration-defaults
+     (drive (string-append (user-account-home-directory aemogie-account)
+                           "/.local/state/persist"))
+     (user aemogie-account))
+    (map
+     (lambda (s) (string-append (user-account-home-directory aemogie-account) "/" s))
+     '(;; things
+       "Sync" "Projects" "Music"
+       ".password-store"
+       ;; state
+       ".gnupg" ".config/guix" ".librewolf"
+       ".local/share/direnv")))))
+
 (define* (make-aemogie-home hostname)
   (home-environment
    (packages (list typst))
@@ -102,7 +131,7 @@ a.out
                                          (inherit %aetheria-home-emacs-configuration)
                                          (package serena-nivea-emacs))))
                          (list (service home-emacs-service-type)))
-                     (list git-config-service)
+                     (list git-config-service persist-service)
                      %aetheria-desktop-home-services))))
 
 (make-aemogie-home (gethostname))
