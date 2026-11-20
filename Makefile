@@ -59,6 +59,11 @@ build/system: $(sources) channels.lock.scm --build-dirs
 	rm -f build/system
 	mv build/tmp/system build/system
 
+build/system.img: $(sources) channels.lock.scm --build-dirs
+	$(guix) system image -t efi-raw --image-size=8G $(guix_system_options) -r"build/tmp/system.img" || exit 1
+	rm -f build/system.img
+	mv build/tmp/system.img build/system.img
+
 build/home: $(sources) channels.lock.scm --build-dirs
 	$(guix) home build $(guix_home_options) # why no gcroot option?
 
@@ -112,11 +117,13 @@ clean:
 	rm -f build/repl
 	$(call clean_file,build/tmp/channels.lock.scm)
 	$(call clean_link,build/tmp/system)
+	$(call clean_link,build/tmp/system.img)
 	$(call clean_link,build/tmp/run-vm)
 	$(call clean_link,build/tmp/run-container)
 	$(call clean_dir,build/tmp/)
 
 	$(call clean_link,build/system)
+	$(call clean_link,build/system.img)
 	$(call clean_link,build/run-vm)
 	$(call clean_link,build/run-container)
 	$(call clean_dir,build/)
