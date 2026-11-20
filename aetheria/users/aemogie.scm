@@ -82,8 +82,7 @@
    `(("git/config" ,(plain-file "git-config" "\
 [user]
 email = \"theaemogie@gmail.com\"
-name = \"aemogie\"
-signingKey = 1B39BA52B26B3DBB
+name = \"aemogie.\"
 
 [commit]
 gpgSign = true
