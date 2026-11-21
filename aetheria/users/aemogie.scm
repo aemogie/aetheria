@@ -18,6 +18,7 @@
   #:use-module ((aetheria home services emacs) #:select (home-emacs-service-type
                                                          %aetheria-home-emacs-configuration
                                                          home-emacs-configuration))
+  #:use-module ((aetheria home services emacs-xyz) #:select (aetheria-home-emacs-ui-service-type))
   #:use-module ((aetheria home services persist) #:select (home-persist-service-type
                                                            persist-configuration-defaults))
   #:use-module ((aetheria users aemogie serena) #:select (serena-nivea-emacs
@@ -116,6 +117,11 @@ a.out
        ".gnupg" ".config/guix" ".librewolf"
        ".local/share/direnv")))))
 
+;; make into an aemogie-emacs-service-type
+(define emacs-services
+  (list
+   (simple-service 'emacs-ui aetheria-home-emacs-ui-service-type '())))
+
 (define* (make-aemogie-home hostname)
   (home-environment
    (packages (list typst))
@@ -128,9 +134,10 @@ a.out
                          (list (service home-emacs-service-type
                                         (home-emacs-configuration
                                          (inherit %aetheria-home-emacs-configuration)
-                                         (package serena-nivea-emacs))))
+                                         (emacs serena-nivea-emacs))))
                          (list (service home-emacs-service-type)))
                      (list git-config-service persist-service)
+                     emacs-services
                      %aetheria-desktop-home-services))))
 
 (make-aemogie-home (gethostname))

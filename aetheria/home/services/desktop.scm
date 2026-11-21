@@ -65,7 +65,7 @@
                      (service-extension home-dbus-service-type (const #f))
                      (service-extension home-pipewire-service-type (const #f))
                      (service-extension home-emacs-service-type
-                                        (const (home-emacs-configuration)))))))
+                                        (const (list (home-emacs-configuration))))))))
 
 (define %aetheria-desktop-home-services
   (list
